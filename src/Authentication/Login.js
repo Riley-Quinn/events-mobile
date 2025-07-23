@@ -14,7 +14,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { updateAbility } from '../casl/Ability';
+import { updateAbility } from '../casl/ability';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 

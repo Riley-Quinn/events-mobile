@@ -1,78 +1,141 @@
-import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+/* eslint-disable react-native/no-inline-styles */
+import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
+  Alert,
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-const AddEvents = () => {
-  const navigation = useNavigation();
-  return (
-    <ScrollView>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.details}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Icon name="chevron-back-sharp" color="#000" size={30} />
-            </TouchableOpacity>
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-            <Text style={styles.heading}>Add Event</Text>
-          </View>
+const AddEventScreen = ({ navigation }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    location: '',
+    description: '',
+    date: new Date(),
+    time: new Date(),
+  });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const handleSave = () => {
+    Alert.alert('Saved', 'Event saved successfully!');
+    navigation.goBack();
+  };
+
+  return (
+    <View style={{ backgroundColor: '#ffeee6', flex: 1 }}>
+      <View style={styles.header}>
+        <View style={styles.details}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="chevron-back-sharp" color="#000" size={30} />
+          </TouchableOpacity>
+          <Text style={styles.heading}>Add Event</Text>
         </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.formContainer}>
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             placeholder="Title"
             placeholderTextColor="#000"
+            value={formData.title}
+            onChangeText={text => setFormData({ ...formData, title: text })}
           />
         </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Description"
-            placeholderTextColor="#000"
-          />
-        </View>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Start Date"
-            placeholderTextColor="#000"
-          />
-        </View>
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             placeholder="Location"
             placeholderTextColor="#000"
+            value={formData.location}
+            onChangeText={text => setFormData({ ...formData, location: text })}
           />
         </View>
 
-        <TouchableOpacity style={styles.addButtonOutlined}>
-          <Text style={styles.addOutlinedText}> + Add Media</Text>
+        <View style={[styles.inputContainer, { height: 80 }]}>
+          <TextInput
+            style={[styles.input, { height: '100%' }]}
+            placeholder="Description"
+            placeholderTextColor="#000"
+            multiline
+            numberOfLines={5}
+            value={formData.description}
+            onChangeText={text =>
+              setFormData({ ...formData, description: text })
+            }
+            textAlignVertical="top"
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.input}>Select Date</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButtonFilled}>
-          <Text style={styles.addButtonText}>Submit</Text>
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowTimePicker(true)}
+        >
+          <Text style={styles.input}>Select Time</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={formData.date}
+            mode="date"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                setFormData({ ...formData, date: selectedDate });
+              }
+            }}
+          />
+        )}
+
+        {showTimePicker && (
+          <DateTimePicker
+            value={formData.time}
+            mode="time"
+            is24Hour={false}
+            display="default"
+            onChange={(event, selectedTime) => {
+              setShowTimePicker(false);
+              if (selectedTime) {
+                setFormData({ ...formData, time: selectedTime });
+              }
+            }}
+          />
+        )}
+
+        <TouchableOpacity style={styles.addButtonFilled} onPress={handleSave}>
+          <Text style={styles.addButtonText}>Save</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButtonFilled} onPress={handleSave}>
+          <Text style={styles.addButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 };
 
+export default AddEventScreen;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    backgroundColor: '#ffeee6',
-  },
   header: {
     width: '100%',
     paddingHorizontal: 20,
@@ -80,11 +143,10 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
-    zIndex: 99,
   },
   details: {
-    display: 'flex',
     flexDirection: 'row',
+    alignItems: 'center',
   },
   heading: {
     fontSize: 26,
@@ -92,6 +154,14 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginLeft: 20,
     color: '#000',
+  },
+  backButton: {
+    marginTop: 10,
+  },
+  formContainer: {
+    padding: 20,
+    alignItems: 'center',
+    paddingBottom: 100,
   },
   inputContainer: {
     borderColor: '#FF8008',
@@ -102,13 +172,11 @@ const styles = StyleSheet.create({
     width: '90%',
     height: 60,
     marginTop: 16,
+    justifyContent: 'center',
   },
   input: {
-    flex: 1,
-    paddingVertical: 7,
+    fontSize: 16,
     color: '#000',
-    fontSize: 18,
-    fontWeight: 'bold',
     marginLeft: 20,
   },
   addButtonFilled: {
@@ -120,14 +188,6 @@ const styles = StyleSheet.create({
     width: '90%',
     alignItems: 'center',
   },
-  addButtonOutlined: {
-    paddingVertical: 20,
-    borderRadius: 30,
-    marginTop: 10,
-    width: '90%',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
   addButtonText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -138,9 +198,4 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#ff883a',
   },
-  backButton: {
-    marginTop: 10,
-  },
 });
-
-export default AddEvents;

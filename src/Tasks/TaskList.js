@@ -72,6 +72,12 @@ const TaskList = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Icon name="chevron-back" size={28} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.title}>My Tasks</Text>
         <TouchableOpacity
           style={styles.addButton}
@@ -158,12 +164,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff883a',
     paddingTop: 50,
   },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 10,
   },
+  backButton: {
+    padding: 5,
+    marginRight: 10,
+  },
+
   title: {
     fontSize: 26,
     fontWeight: 'bold',

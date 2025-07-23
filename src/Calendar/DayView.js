@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+/* eslint-disable no-shadow */
+/* eslint-disable radix */
+/* eslint-disable react-native/no-inline-styles */
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   View,
@@ -6,62 +9,253 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
+import axios from 'axios';
 import moment from 'moment';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
+import DatePicker from 'react-native-date-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 const timeSlots = Array.from(
   { length: 24 },
   (_, i) => `${i % 12 || 12} ${i < 12 ? 'AM' : 'PM'}`,
 );
 
-const staticData = {
-  birthdays: [
-    { id: '1', title: "John's Birthday", time: '10', date: '2025-07-21' },
-  ],
-  events: [
-    { id: '2', title: 'Team Meeting', time: '11', date: '2025-07-21' },
-    { id: '3', title: 'Lunch with Alex', time: '13', date: '2025-07-21' },
-  ],
-  notes: [{ id: '4', title: 'Call plumber', time: '16', date: '2025-07-21' }],
-  tasks: [{ id: '5', title: 'Submit Report', time: '9', date: '2025-07-21' }],
-};
-
 const COLORS = {
-  birthdays: '#FF6B81', // Soft Coral Pink
-  events: '#1ABC9C', // Elegant Teal
-  notes: '#F8C471', // Warm Amber
-  tasks: '#5DADE2', // Soft Blue
+  birthdays: '#FF6B81',
+  events: '#1ABC9C',
+  importantDays: '#F8C471',
 };
 
 const DayView = () => {
   const [selectedTab, setSelectedTab] = useState(null);
   const [tabTouched, setTabTouched] = useState(false);
+  const [selectedDate] = useState(moment().format('YYYY-MM-DD'));
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [birthdayForm, setBirthdayForm] = useState({
+    name: '',
+    date: new Date(),
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [data, setData] = useState({
+    birthdays: [],
+    events: [],
+    importantDays: [],
+  });
+  const [loading, setLoading] = useState(false);
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editBirthday, setEditBirthday] = useState({
+    id: '',
+    name: '',
+    birth_date: '',
+  });
+
+  const [editImportantModalVisible, setEditImportantModalVisible] =
+    useState(false);
+  const [editImportantDay, setEditImportantDay] = useState({
+    id: '',
+    name: '',
+    importantDay_date: '',
+  });
+
   const navigation = useNavigation();
-  const selectedDate = '2025-07-21';
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
+        axios.get('http://10.0.2.2:4000/api/birthdays/all', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get('http://10.0.2.2:4000/api/events/all', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get('http://10.0.2.2:4000/api/specialdays/all', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      setData({
+        birthdays: birthdaysRes.data,
+        events: eventsRes.data,
+        importantDays: specialDaysRes.data,
+      });
+    } catch (err) {
+      console.error('Error fetching data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateBirthday = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      // Extract only date part to ensure correct format
+      const birthDateOnly = moment(editBirthday.birth_date).format(
+        'YYYY-MM-DD',
+      );
+
+      await axios.put(
+        `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
+        {
+          name: editBirthday.name,
+          birth_date: birthDateOnly,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setEditModalVisible(false);
+      fetchAllData();
+    } catch (err) {
+      console.error('Error updating birthday', err);
+    }
+  };
+
+  const handleDeleteBirthday = async () => {
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this birthday?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              await axios.delete(
+                `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              setEditModalVisible(false);
+              fetchAllData();
+            } catch (err) {
+              console.error('Error deleting birthday', err);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  const handleUpdateImportantDay = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      const importantDayDateOnly = moment(
+        editImportantDay.importantDay_date,
+      ).format('YYYY-MM-DD');
+
+      await axios.put(
+        `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+        {
+          name: editImportantDay.name,
+          importantDay_date: importantDayDateOnly,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setEditImportantModalVisible(false);
+      fetchAllData();
+    } catch (err) {
+      console.error('Error updating important day', err);
+    }
+  };
+
+  const handleDeleteImportantDay = async () => {
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this important day?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              await axios.delete(
+                `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+                { headers: { Authorization: `Bearer ${token}` } },
+              );
+              setEditImportantModalVisible(false);
+              fetchAllData();
+            } catch (err) {
+              console.error('Error deleting important day', err);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  };
 
   const getFilteredItems = () => {
-    return Object.entries(staticData).flatMap(([category, items]) =>
+    const filterByDate = (items, key) =>
       items
-        .filter(
-          item =>
-            item.date === selectedDate &&
-            (!selectedTab || selectedTab === category),
-        )
-        .map(item => ({ ...item, category })),
-    );
+        .filter(item => {
+          if (key === 'birth_date') {
+            return (
+              moment(item[key]).format('MM-DD') ===
+              moment(selectedDate).format('MM-DD')
+            );
+          } else {
+            return moment(item[key]).format('YYYY-MM-DD') === selectedDate;
+          }
+        })
+        .map(item => ({
+          ...item,
+          category:
+            key === 'birth_date'
+              ? 'birthdays'
+              : key === 'date'
+              ? 'events'
+              : 'importantDays',
+        }));
+
+    const birthdays = filterByDate(data.birthdays, 'birth_date');
+    const events = filterByDate(data.events, 'date');
+    const importantDays = filterByDate(data.importantDays, 'importantDay_date');
+
+    const allItems = [...birthdays, ...events, ...importantDays];
+
+    if (selectedTab) {
+      return {
+        allItems: allItems.filter(item => item.category === selectedTab),
+        birthdays,
+        events,
+        importantDays,
+      };
+    }
+
+    return { allItems, birthdays, events, importantDays };
   };
 
   const renderTabs = () => {
     const tabs = tabTouched
-      ? ['all', 'birthdays', 'events', 'notes', 'tasks']
-      : ['birthdays', 'events', 'notes', 'tasks'];
+      ? ['all', 'birthdays', 'events', 'importantDays']
+      : ['birthdays', 'events', 'importantDays'];
 
     return (
       <View style={styles.tabContainer}>
         {tabs.map(tab => {
           const isActive =
             (selectedTab === null && tab === 'all') || selectedTab === tab;
-
           return (
             <TouchableOpacity
               key={tab}
@@ -83,12 +277,13 @@ const DayView = () => {
   };
 
   const renderDayTimeline = () => {
-    const items = getFilteredItems();
+    const { allItems } = getFilteredItems();
 
     return timeSlots.map((slot, index) => {
       const hour = index;
-      // eslint-disable-next-line radix
-      const slotItems = items.filter(i => parseInt(i.time) === hour);
+      const slotItems = allItems.filter(
+        i => parseInt(i.time || '9') === hour, // Default to 9 AM if time missing
+      );
 
       return (
         <View key={index} style={styles.slotRow}>
@@ -96,15 +291,41 @@ const DayView = () => {
           <View style={styles.verticalLine} />
           <View style={styles.slotContent}>
             {slotItems.map(item => (
-              <View
-                key={item.id}
-                style={[
-                  styles.eventBox,
-                  { backgroundColor: COLORS[item.category] },
-                ]}
+              <TouchableOpacity
+                key={`${item.category}-${item.id}`}
+                onLongPress={() => {
+                  if (item.category === 'birthdays') {
+                    setEditBirthday({
+                      id: item.id,
+                      name: item.name,
+                      birth_date: item.birth_date,
+                    });
+                    setEditModalVisible(true);
+                  }
+
+                  if (item.category === 'importantDays') {
+                    setEditImportantDay({
+                      id: item.id,
+                      name: item.name,
+                      importantDay_date: item.importantDay_date,
+                    });
+                    setEditImportantModalVisible(true);
+                  }
+                }}
               >
-                <Text style={styles.eventText}>{item.title}</Text>
-              </View>
+                <View
+                  style={[
+                    styles.eventBox,
+                    { backgroundColor: COLORS[item.category] },
+                  ]}
+                >
+                  <Text style={styles.eventText}>
+                    {item.category === 'birthdays'
+                      ? `${item.name}'s Birthday`
+                      : item.name || item.title}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -112,146 +333,495 @@ const DayView = () => {
     });
   };
 
+  const { birthdays, events, importantDays } = getFilteredItems();
+
   return (
     <View style={styles.container}>
-      <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => navigation.navigate('MonthView')}>
-          <Text style={styles.topNavText}>Month</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('WeekView')}>
-          <Text style={styles.topNavText}>Week</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
-          <Text style={styles.topNavText}>Day</Text>
+      <View style={{ position: 'absolute', left: 10, top: 30, zIndex: 999 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="chevron-back" size={26} color="#000" />
         </TouchableOpacity>
       </View>
-      <View style={styles.header}>
+
+      <View style={styles.topNav}>
         <TouchableOpacity
           onPress={() => navigation.navigate('MonthView', { selectedDate })}
+          style={styles.navTabBackground}
         >
-          <Text style={styles.dateText}>
-            {moment(selectedDate).format('dddd, MMMM D')}
-          </Text>
+          <Text style={styles.navTabText}>Month</Text>
         </TouchableOpacity>
-
-        {renderTabs()}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('WeekView', { selectedDate })}
+          style={styles.navTabBackground}
+        >
+          <Text style={styles.navTabText}>Week</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DayView')}
+          style={styles.navTabBackground}
+        >
+          <Text style={styles.navTabText}>Day</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.timelineContainer}>
-        {renderDayTimeline()}
-      </ScrollView>
+      <View style={styles.header}>
+        <Text style={styles.dateText}>
+          {moment(selectedDate).format('dddd, MMMM D')}
+        </Text>
+
+        {renderTabs()}
+
+        <View style={styles.countContainer}>
+          {birthdays.length > 0 && (
+            <View
+              style={[styles.countBox, { backgroundColor: COLORS.birthdays }]}
+            >
+              <Text style={styles.countText}>
+                Birthdays: {birthdays.length}
+              </Text>
+            </View>
+          )}
+          {events.length > 0 && (
+            <View style={[styles.countBox, { backgroundColor: COLORS.events }]}>
+              <Text style={styles.countText}>Events: {events.length}</Text>
+            </View>
+          )}
+          {importantDays.length > 0 && (
+            <View
+              style={[
+                styles.countBox,
+                { backgroundColor: COLORS.importantDays },
+              ]}
+            >
+              <Text style={styles.countText}>
+                Important Days: {importantDays.length}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#1ABC9C"
+          style={{ marginTop: 30 }}
+        />
+      ) : (
+        <ScrollView style={styles.timelineContainer}>
+          {renderDayTimeline()}
+        </ScrollView>
+      )}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowOptionsModal(true)}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+      <Modal
+        visible={showOptionsModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowOptionsModal(false)}
+        >
+          <View style={styles.bottomSheet}>
+            {['Add Birthday', 'Add Important Day', 'Add Event'].map(text => (
+              <TouchableOpacity
+                key={text}
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  if (text === 'Add Event') {
+                    navigation.navigate('AddEvent');
+                  } else if (text === 'Add Birthday') {
+                    setShowBirthdayModal(true);
+                  } else {
+                    console.log(`${text} clicked`);
+                  }
+                }}
+              >
+                <Text style={styles.optionText}>{text}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={showBirthdayModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowBirthdayModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#00000055',
+          }}
+        >
+          <View
+            style={{
+              width: '85%',
+              backgroundColor: '#fff',
+              padding: 20,
+              borderRadius: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                textAlign: 'center',
+                marginBottom: 16,
+                color: '#000',
+              }}
+            >
+              Add Birthday
+            </Text>
+            <TextInput
+              placeholder="Name"
+              placeholderTextColor="#888"
+              value={birthdayForm.name}
+              onChangeText={text =>
+                setBirthdayForm({ ...birthdayForm, name: text })
+              }
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                marginBottom: 16,
+                color: '#000',
+              }}
+            />
+            <TouchableOpacity
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 14,
+                marginBottom: 16,
+              }}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={{ color: '#888', fontWeight: 'bold', fontSize: 14 }}>
+                selectDate
+              </Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={birthdayForm.date}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setBirthdayForm({ ...birthdayForm, date: selectedDate });
+                  }
+                }}
+              />
+            )}
+
+            <View
+              style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+            >
+              <TouchableOpacity
+                onPress={() => setShowBirthdayModal(false)}
+                style={{
+                  backgroundColor: '#3EB489',
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('Birthday Added:', birthdayForm);
+                  setShowBirthdayModal(false);
+                }}
+                style={{
+                  backgroundColor: '#3EB489',
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Birthday Edit Modal */}
+      {editModalVisible && (
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.modalTitle}>Edit Birthday</Text>
+            <Text>Name</Text>
+            <TouchableOpacity>
+              <View style={styles.inputBox}>
+                <Text style={{ color: '#333' }}>{editBirthday.name}</Text>
+              </View>
+            </TouchableOpacity>
+            <Text>Date</Text>
+            <DatePicker
+              date={new Date(editBirthday.birth_date)}
+              mode="date"
+              onDateChange={date => {
+                setEditBirthday({
+                  ...editBirthday,
+                  birth_date: moment(date).format('YYYY-MM-DD'),
+                });
+              }}
+              androidVariant="iosClone"
+            />
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Text style={styles.cancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDeleteBirthday}>
+                <Text style={styles.delete}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleUpdateBirthday}>
+                <Text style={styles.save}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Important Day Edit Modal */}
+      {editImportantModalVisible && (
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.modalTitle}>Edit Important Day</Text>
+            <Text>Name</Text>
+            <TouchableOpacity>
+              <View style={styles.inputBox}>
+                <Text style={{ color: '#333' }}>{editImportantDay.name}</Text>
+              </View>
+            </TouchableOpacity>
+            <Text>Date</Text>
+            <DatePicker
+              date={new Date(editImportantDay.importantDay_date)}
+              mode="date"
+              onDateChange={date => {
+                setEditImportantDay({
+                  ...editImportantDay,
+                  importantDay_date: moment(date).format('YYYY-MM-DD'),
+                });
+              }}
+              androidVariant="iosClone"
+            />
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                onPress={() => setEditImportantModalVisible(false)}
+              >
+                <Text style={styles.cancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDeleteImportantDay}>
+                <Text style={styles.delete}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleUpdateImportantDay}>
+                <Text style={styles.save}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-  },
+  container: { flex: 1, backgroundColor: '#f9f9f9' },
   header: {
-    paddingTop: 30,
+    paddingTop: 20,
     paddingBottom: 10,
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderBottomColor: '#bbb',
+    backgroundColor: '#ffeee6',
+    borderBottomColor: '#eee',
     borderBottomWidth: 1,
   },
-  dateText: {
-    fontSize: 18,
-    color: 'black',
+  navTabBackground: {
+    backgroundColor: '#ff883a',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  navTabText: {
+    color: '#000',
     fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 14,
+  },
+  dateText: {
+    fontSize: 20,
+    color: '#222',
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   topNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
-    marginTop: 40,
-    backgroundColor: '#fff',
-    borderBottomColor: '#fff',
-    borderBottomWidth: 1,
+    marginTop: 30,
+    backgroundColor: '#ffeee6',
   },
-  topNavText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
-  },
-
   timelineContainer: {
     flex: 1,
     paddingHorizontal: 10,
-    backgroundColor: '#fdfdfd',
+    backgroundColor: '#ffeee6',
   },
   slotRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 0.8,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
     minHeight: 60,
   },
-  timeLabel: {
-    width: 60,
-    color: 'black',
-    fontSize: 14,
-  },
-  slotContent: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-  },
+  timeLabel: { width: 50, color: '#444', fontSize: 13 },
+  slotContent: { flex: 1, paddingVertical: 8, paddingHorizontal: 8 },
   eventBox: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    width: '50%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    width: '90%',
     alignSelf: 'center',
-    backgroundColor: '#f2f2f2',
+    marginBottom: 6,
   },
   eventText: {
-    color: '#000',
+    color: '#fff',
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 13,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffeee6',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    justifyContent: 'space-around',
-    borderTopColor: '#eee',
-    borderTopWidth: 1,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   tab: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 20,
-    alignItems: 'center',
+    marginHorizontal: 6,
   },
-  activeTab: {
-    backgroundColor: '#e0f7ef',
-  },
-  tabText: {
-    color: '#888',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  activeTabText: {
-    color: '#3EB489',
-    fontWeight: 'bold',
-  },
+  activeTab: { backgroundColor: '#ff883a' },
+  tabText: { color: '#888', fontWeight: 'bold', fontSize: 13 },
+  activeTabText: { color: '#000', fontWeight: 'bold' },
   verticalLine: {
     width: 1,
-    backgroundColor: '#bbb',
+    backgroundColor: '#ddd',
     height: '100%',
-    marginHorizontal: 10,
+    marginHorizontal: 8,
   },
   underline: {
     marginTop: 4,
     height: 2,
     width: '100%',
-    backgroundColor: '#3EB489',
+    backgroundColor: '#ffeee6',
     borderRadius: 1,
+  },
+  countContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  countBox: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  countText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  popup: {
+    width: '85%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  inputBox: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  cancel: { color: '#999', fontWeight: 'bold' },
+  delete: { color: '#ff4d4d', fontWeight: 'bold' },
+  save: { color: '#1abc9c', fontWeight: 'bold' },
+
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#3EB489',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: '#00000055',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  optionBtn: {
+    paddingVertical: 14,
+    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#333',
   },
 });
 

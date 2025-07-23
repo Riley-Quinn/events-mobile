@@ -13,13 +13,16 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
 
 const AddPressRelease = () => {
   const navigation = useNavigation();
 
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
+
+  const [errors, setErrors] = useState({});
+  const [showAssigneeModal, setShowAssigneeModal] = useState(false);
+
   const [assigneeId, setAssigneeId] = useState(null);
   const [users, setUsers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -46,8 +49,19 @@ const AddPressRelease = () => {
   };
 
   const handleSubmit = async () => {
-    if (!title || !notes || !assigneeId) {
-      Alert.alert('Validation', 'All fields are required');
+    // if (!title || !notes || !assigneeId) {
+    //   Alert.alert('Validation', 'All fields are required');
+    //   return;
+    // }
+    const newErrors = {};
+
+    if (!title.trim()) newErrors.title = 'Title is required';
+    if (!notes.trim()) newErrors.notes = 'Description is required';
+    if (!assigneeId) newErrors.assigneeId = 'Assignee is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      Alert.alert('Validation Error', 'Please fill all the required fields.');
       return;
     }
 
@@ -107,28 +121,98 @@ const AddPressRelease = () => {
             onChangeText={setTitle}
           />
         </View>
-
-        <View style={styles.inputContainer}>
+        {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+        <View style={[styles.inputContainer, { height: 130 }]}>
           <TextInput
-            style={styles.input}
-            placeholder="Description"
+            style={[styles.input, { height: '100%' }]}
+            placeholder="Notes"
             placeholderTextColor="#000"
             value={notes}
             onChangeText={setNotes}
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
           />
         </View>
-        <View style={styles.inputContainer}>
-          <Picker
-            selectedValue={assigneeId}
-            onValueChange={value => setAssigneeId(value)}
-            style={styles.input}
+
+        {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowAssigneeModal(true)}
+        >
+          <Text style={styles.input}>
+            {assigneeId
+              ? users.find(user => user.id === assigneeId)?.name
+              : 'Select Assignee'}
+          </Text>
+        </TouchableOpacity>
+        {errors.assigneeId && (
+          <Text style={styles.errorText}>{errors.assigneeId}</Text>
+        )}
+        {showAssigneeModal && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            <Picker.Item label="Select Assignee" value={null} />
-            {users.map(user => (
-              <Picker.Item key={user.id} label={user.name} value={user.id} />
-            ))}
-          </Picker>
-        </View>
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 20,
+                borderRadius: 20,
+                width: '85%',
+                maxHeight: '70%',
+              }}
+            >
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowAssigneeModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: 'black',
+                  fontWeight: 'bold',
+                  marginBottom: 15,
+                }}
+              >
+                Select Assignee
+              </Text>
+
+              {users.map(user => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderColor: '#eee',
+                  }}
+                  onPress={() => {
+                    setAssigneeId(user.id);
+                    setShowAssigneeModal(false);
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 16, color: '#888', fontWeight: 'bold' }}
+                  >
+                    {user.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity style={styles.addButtonOutlined}>
           <Text style={styles.addOutlinedText}>+ Add Media</Text>
@@ -155,6 +239,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     backgroundColor: '#ffeee6',
   },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 30,
+    alignSelf: 'flex-start',
+  },
+
   header: {
     width: '100%',
     paddingHorizontal: 20,

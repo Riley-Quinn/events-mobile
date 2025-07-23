@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { ability, updateAbility } from '../casl/Ability';
+import { ability, updateAbility } from '../casl/ability';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
@@ -102,6 +102,14 @@ const DashboardScreen = () => {
         <View style={styles.topRow}>
           <Icon name="menu" size={30} color="#000" />
 
+          {/* Profile Icon */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile')} // change 'Profile' to your profile screen name
+            style={{ marginRight: 20 }}
+          >
+            <Icon name="account-circle" size={30} color="#000" />
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={handleLogout}>
             <Icon name="logout" size={28} color="#000" />
           </TouchableOpacity>
@@ -157,7 +165,7 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {ability.can('view', 'Event') && (
+        {ability.can('add', 'Event') && (
           <TouchableOpacity
             style={styles.addButtonFilled}
             onPress={() => navigation.navigate('TaskList')}
@@ -166,7 +174,7 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         )}
 
-        {ability.can('view', 'Media') && (
+        {ability.can('add', 'Media') && (
           <TouchableOpacity
             style={styles.addButtonOutlined}
             onPress={() => navigation.navigate('PressReleaseList')}
@@ -194,9 +202,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 40,
   },
   topRow: {
-    display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    gap: 20, // or use margin in icons for spacing
   },
   menuIcon: {
     alignSelf: 'flex-start',
