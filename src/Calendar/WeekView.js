@@ -18,6 +18,7 @@ import moment from 'moment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { BASE_URL } from '@env';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -56,13 +57,13 @@ const WeekView = () => {
       const token = await AsyncStorage.getItem('token');
 
       const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
-        axios.get('http://10.0.2.2:4000/api/birthdays/all', {
+        axios.get(`${BASE_URL}/api/birthdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/events/all', {
+        axios.get(`${BASE_URL}/api/events/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/specialdays/all', {
+        axios.get(`${BASE_URL}/api/specialdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

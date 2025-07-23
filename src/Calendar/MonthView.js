@@ -13,6 +13,8 @@ import {
 import { Calendar } from 'react-native-calendars';
 import axios from 'axios';
 import moment from 'moment';
+import { BASE_URL } from '@env';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -56,13 +58,13 @@ const MonthView = () => {
       const token = await AsyncStorage.getItem('token');
 
       const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
-        axios.get('http://10.0.2.2:4000/api/birthdays/all', {
+        axios.get(`${BASE_URL}/api/birthdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/events/all', {
+        axios.get(`${BASE_URL}/api/events/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/specialdays/all', {
+        axios.get(`${BASE_URL}/api/specialdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -174,7 +176,7 @@ const MonthView = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       await axios.put(
-        `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
+        `${BASE_URL}/api/birthdays/${editBirthday.id}`,
         {
           name: editBirthday.name,
           birth_date: editBirthday.birth_date,
@@ -198,12 +200,9 @@ const MonthView = () => {
         onPress: async () => {
           try {
             const token = await AsyncStorage.getItem('token');
-            await axios.delete(
-              `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              },
-            );
+            await axios.delete(`${BASE_URL}/api/birthdays/${editBirthday.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
             setEditBirthday(null);
             fetchAllData();
           } catch (err) {
@@ -219,7 +218,7 @@ const MonthView = () => {
     try {
       const token = await AsyncStorage.getItem('token');
       await axios.put(
-        `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+        `${BASE_URL}/api/specialdays/${editImportantDay.id}`,
         {
           name: editImportantDay.name,
           importantDay_date: editImportantDay.importantDay_date,
@@ -244,7 +243,7 @@ const MonthView = () => {
           try {
             const token = await AsyncStorage.getItem('token');
             await axios.delete(
-              `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+              `${BASE_URL}/api/specialdays/${editImportantDay.id}`,
               {
                 headers: { Authorization: `Bearer ${token}` },
               },

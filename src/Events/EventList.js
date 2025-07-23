@@ -10,68 +10,51 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
 
-const TaskList = () => {
+const EventList = () => {
   const navigation = useNavigation();
-  const [tasks, setTasks] = useState([]);
+  const [events, setEvents] = useState([]);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchTasks();
+      fetchEvents();
     }, []),
   );
 
-  const fetchTasks = async () => {
+  const fetchEvents = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
-      const res = await axios.get(`${BASE_URL}/api/tasks`, {
+      const res = await axios.get(`${BASE_URL}/api/events/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      setTasks(res.data.list);
+      setEvents(res.data);
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch tasks');
+      Alert.alert('Error', 'Failed to fetch events');
     }
   };
 
-  const handleDelete = async task_id => {
+  const handleDelete = async eventId => {
     try {
       const token = await AsyncStorage.getItem('token');
-
-      await axios.delete(`${BASE_URL}/api/tasks/${task_id}`, {
+      await axios.delete(`${BASE_URL}/api/events/${eventId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      fetchTasks();
-      Alert.alert('Deleted', 'Task deleted successfully');
+      fetchEvents();
+      Alert.alert('Deleted', 'Event deleted successfully');
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to delete task');
-    }
-  };
-
-  const getStatusColor = status => {
-    switch (status) {
-      case 'Pending':
-        return 'orange';
-      case 'Done':
-        return 'green';
-      case 'Closed':
-        return 'green';
-      default:
-        return '#1976d2';
+      Alert.alert('Error', 'Failed to delete event');
     }
   };
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -79,40 +62,37 @@ const TaskList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Tasks</Text>
+        <Text style={styles.title}>My Events</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddTasks')}
+          onPress={() => navigation.navigate('AddEvent')}
         >
           <Icon name="add-circle" size={30} color="#ff883a" />
         </TouchableOpacity>
       </View>
 
+      {/* Event List */}
       <ScrollView contentContainerStyle={styles.taskList}>
-        {tasks.map(task => (
-          <View key={task.task_id} style={styles.card}>
+        {events.map(event => (
+          <View key={event.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.taskTitle}>{task.title}</Text>
+              <Text style={styles.taskTitle}>{event.title}</Text>
               <View style={styles.actionIcons}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('EditTask', { task })}
+                  onPress={() => navigation.navigate('EditEvent', { event })}
                 >
                   <Icon name="create-outline" size={22} color="#1976d2" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
-                    Alert.alert(
-                      'Delete Task',
-                      'Are you sure you want to delete this task?',
-                      [
-                        { text: 'Cancel' },
-                        {
-                          text: 'Delete',
-                          onPress: () => handleDelete(task.task_id),
-                          style: 'destructive',
-                        },
-                      ],
-                    )
+                    Alert.alert('Delete Event', 'Are you sure?', [
+                      { text: 'Cancel' },
+                      {
+                        text: 'Delete',
+                        onPress: () => handleDelete(event.id),
+                        style: 'destructive',
+                      },
+                    ])
                   }
                   style={{ marginLeft: 12 }}
                 >
@@ -122,35 +102,25 @@ const TaskList = () => {
             </View>
 
             <View style={styles.row}>
-              <MaterialIcons name="category" size={18} color="#ff883a" />
-              <Text style={styles.label}> {task.category_name}</Text>
+              <MaterialIcons name="event" size={18} color="#ff883a" />
+              <Text style={styles.label}> {event.date}</Text>
+            </View>
+
+            <View style={styles.row}>
+              <Icon name="time-outline" size={18} color="#ff883a" />
+              <Text style={styles.label}>
+                {event.time === '00:00:00' ? 'All Day' : event.time}
+              </Text>
             </View>
 
             <View style={styles.row}>
               <Icon name="location-outline" size={18} color="#ff883a" />
-              <Text style={styles.label}> {task.location}</Text>
+              <Text style={styles.label}> {event.location}</Text>
             </View>
 
             <View style={styles.row}>
-              <FontAwesome5 name="user-circle" size={18} color="#ff883a" />
-              <Text style={styles.label}> {task.assignee_name}</Text>
-            </View>
-
-            <View style={styles.row}>
-              <MaterialIcons
-                name="pending-actions"
-                size={18}
-                color={getStatusColor(task.status_name)}
-              />
-              <Text
-                style={[
-                  styles.status,
-                  { color: getStatusColor(task.status_name) },
-                ]}
-              >
-                {' '}
-                {task.status_name}
-              </Text>
+              <MaterialIcons name="description" size={18} color="#ff883a" />
+              <Text style={styles.label}> {event.description}</Text>
             </View>
           </View>
         ))}
@@ -158,6 +128,8 @@ const TaskList = () => {
     </View>
   );
 };
+
+export default EventList;
 
 const styles = StyleSheet.create({
   container: {
@@ -188,6 +160,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
   },
+
   taskList: {
     paddingHorizontal: 16,
     paddingBottom: 100,
@@ -222,11 +195,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
-  status: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
 });
-
-export default TaskList;

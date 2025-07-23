@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '@env';
 
 const AddTasks = () => {
   const navigation = useNavigation();
@@ -41,10 +42,10 @@ const AddTasks = () => {
       const token = await AsyncStorage.getItem('token');
 
       const [userRes, categoryRes] = await Promise.all([
-        axios.get('http://10.0.2.2:4000/api/auth/users', {
+        axios.get(`${BASE_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/categories', {
+        axios.get(`${BASE_URL}/api/categories`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -85,7 +86,7 @@ const AddTasks = () => {
         status_id: 1,
       };
 
-      const res = await axios.post('http://10.0.2.2:4000/api/tasks', taskData, {
+      const res = await axios.post(`${BASE_URL}/api/tasks`, taskData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

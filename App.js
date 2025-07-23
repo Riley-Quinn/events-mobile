@@ -15,6 +15,7 @@ import TaskList from './src/Tasks/TaskList';
 import PressReleaseList from './src/PressRelease/PressReleaseList';
 import AddPressRelease from './src/PressRelease/AddPressRelease';
 import Profile from './src/Dashboard/Profile';
+import EventList from './src/Events/EventsList';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ export default function App() {
           <Stack.Screen name="AddPressRelease" component={AddPressRelease} />
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="AddEvent" component={AddEvents} />
+          <Stack.Screen name="EventsList" component={EventList} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

@@ -17,8 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { updateAbility } from '../casl/ability';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-
-const API_URL = 'http://10.0.2.2:4000/api/auth/login';
+import { BASE_URL } from '@env';
+const API_URL = `${BASE_URL}/api/auth/login`;
 
 const LoginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),

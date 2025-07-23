@@ -13,6 +13,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ability, updateAbility } from '../casl/ability';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { Image } from 'react-native';
+import { BASE_URL } from '@env';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,7 +63,7 @@ const DashboardScreen = () => {
 
       if (token) {
         await axios.post(
-          'http://10.0.2.2:4000/api/auth/logout',
+          `${BASE_URL}/api/auth/logout`,
           {},
           {
             headers: {
@@ -102,17 +104,22 @@ const DashboardScreen = () => {
         <View style={styles.topRow}>
           <Icon name="menu" size={30} color="#000" />
 
-          {/* Profile Icon */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Profile')} // change 'Profile' to your profile screen name
-            style={{ marginRight: 20 }}
-          >
-            <Icon name="account-circle" size={30} color="#000" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 20 }}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Image
+                source={require('../../assets/Profile.png')}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 18,
+                }}
+              />
+            </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleLogout}>
-            <Icon name="logout" size={28} color="#000" />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+              <Icon name="logout" size={28} color="#000" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.details}>
@@ -182,6 +189,17 @@ const DashboardScreen = () => {
             <Text style={styles.addOutlinedText}>Press Release</Text>
           </TouchableOpacity>
         )}
+
+        {ability.can('add', 'Media') && (
+          <View style={{ marginTop: 15, width: '100%' }}>
+            <TouchableOpacity
+              style={styles.addButtonOutlined}
+              onPress={() => navigation.navigate('EventsList')}
+            >
+              <Text style={styles.addOutlinedText}> Events</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </ImageBackground>
   );
@@ -203,11 +221,11 @@ const styles = StyleSheet.create({
   },
   topRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    gap: 20, // or use margin in icons for spacing
   },
+
   menuIcon: {
     alignSelf: 'flex-start',
     marginBottom: 15,
@@ -232,13 +250,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontWeight: 'bold',
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    marginBottom: 10,
   },
 
   name: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
+    marginBottom: 15,
   },
 
   reminder: {
@@ -247,6 +266,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 20,
     marginTop: -height * 0.05,
+
     padding: 15,
     borderRadius: 20,
     elevation: 5,
@@ -278,7 +298,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
-    marginTop: -20,
+    marginTop: -50,
+
     paddingTop: 50,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -289,6 +310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     marginBottom: 30,
+    marginTop: 30,
   },
 
   iconBox: {

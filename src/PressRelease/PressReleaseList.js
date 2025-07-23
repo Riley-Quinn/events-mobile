@@ -14,6 +14,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '@env';
 
 const PressReleaseList = () => {
   const navigation = useNavigation();
@@ -29,7 +30,7 @@ const PressReleaseList = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const res = await axios.get('http://10.0.2.2:4000/api/press-release/', {
+      const res = await axios.get(`${BASE_URL}/api/press-release/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -44,7 +45,7 @@ const PressReleaseList = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      await axios.delete(`http://10.0.2.2:4000/api/press-release/${press_id}`, {
+      await axios.delete(`${BASE_URL}/api/press-release/${press_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

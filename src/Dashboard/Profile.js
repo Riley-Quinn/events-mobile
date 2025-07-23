@@ -2,18 +2,29 @@ import React from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   Dimensions,
   Image,
   ScrollView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 const Profile = () => {
+  const navigation = useNavigation();
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.topOrange} />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Icon name="chevron-back-sharp" color="#000" size={30} />
+      </TouchableOpacity>
 
       <View style={styles.circleWrapper}>
         <View style={styles.circle}>
@@ -131,14 +142,29 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 1,
+    backgroundColor: '#F57921',
+    borderRadius: 20,
+    padding: 6,
+  },
+
+  backIcon: {
+    color: 'black',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
 
   topOrange: {
-    height: height * 0.2,
+    height: height * 0.15,
     backgroundColor: '#F57921',
   },
   circleWrapper: {
     position: 'absolute',
-    top: height * 0.2 - CIRCLE_SIZE / 2,
+    top: height * 0.14 - CIRCLE_SIZE / 2, // was height * 0.2
     left: width / 2 - CIRCLE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -151,7 +177,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    marginTop: CIRCLE_SIZE / 2 - 10,
+    marginTop: CIRCLE_SIZE / 2 - 20,
     padding: 20,
   },
 

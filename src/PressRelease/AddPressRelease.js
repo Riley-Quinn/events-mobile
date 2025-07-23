@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '@env';
 
 const AddPressRelease = () => {
   const navigation = useNavigation();
@@ -36,7 +37,7 @@ const AddPressRelease = () => {
       const token = await AsyncStorage.getItem('token');
 
       const [userRes] = await Promise.all([
-        axios.get('http://10.0.2.2:4000/api/auth/users', {
+        axios.get(`${BASE_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -77,7 +78,7 @@ const AddPressRelease = () => {
       };
 
       const res = await axios.post(
-        'http://10.0.2.2:4000/api/press-release/create',
+        `${BASE_URL}/api/press-release/create`,
         pressReleaseData,
         {
           headers: { Authorization: `Bearer ${token}` },

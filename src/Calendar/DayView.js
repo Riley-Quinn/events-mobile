@@ -530,14 +530,13 @@ const DayView = () => {
                 }}
               />
             )}
-
             <View
               style={{ flexDirection: 'row', justifyContent: 'space-between' }}
             >
               <TouchableOpacity
                 onPress={() => setShowBirthdayModal(false)}
                 style={{
-                  backgroundColor: '#3EB489',
+                  backgroundColor: '#6598d5',
                   paddingVertical: 10,
                   paddingHorizontal: 20,
                   borderRadius: 8,
@@ -553,7 +552,7 @@ const DayView = () => {
                   setShowBirthdayModal(false);
                 }}
                 style={{
-                  backgroundColor: '#3EB489',
+                  backgroundColor: '#ff883a',
                   paddingVertical: 10,
                   paddingHorizontal: 20,
                   borderRadius: 8,
@@ -604,7 +603,6 @@ const DayView = () => {
         </View>
       )}
 
-      {/* Important Day Edit Modal */}
       {editImportantModalVisible && (
         <View style={styles.overlay}>
           <View style={styles.popup}>
@@ -792,7 +790,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     right: 20,
-    backgroundColor: '#3EB489',
+    backgroundColor: '#ff883a',
     borderRadius: 30,
     width: 60,
     height: 60,
@@ -809,7 +807,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   bottomSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffeee6',
     padding: 20,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,

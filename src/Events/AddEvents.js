@@ -1,4 +1,5 @@
-/* eslint-disable react-native/no-inline-styles */
+// /* eslint-disable react-native/no-inline-styles */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -11,6 +12,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import moment from 'moment';
+import { BASE_URL } from '@env';
 
 const AddEventScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -24,9 +29,28 @@ const AddEventScreen = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const handleSave = () => {
-    Alert.alert('Saved', 'Event saved successfully!');
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const Values = {
+        ...formData,
+        date: moment(formData.date).format('YYYY-MM-DD'),
+        time: moment(formData.time).format('HH:mm'),
+      };
+      console.log('Form values being submitted:', Values);
+
+      const res = await axios.post(`${BASE_URL}/api/events/create`, Values, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert('Success', res?.data?.message || 'Event saved successfully!');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error saving event:', error);
+      Alert.alert('Error', 'Failed to save event');
+    }
   };
 
   return (
@@ -83,14 +107,18 @@ const AddEventScreen = ({ navigation }) => {
           style={styles.inputContainer}
           onPress={() => setShowDatePicker(true)}
         >
-          <Text style={styles.input}>Select Date</Text>
+          <Text style={styles.input}>
+            {moment(formData.date).format('YYYY-MM-DD')}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowTimePicker(true)}
         >
-          <Text style={styles.input}>Select Time</Text>
+          <Text style={styles.input}>
+            {moment(formData.time).format('hh:mm A')}
+          </Text>
         </TouchableOpacity>
 
         {showDatePicker && (
@@ -125,7 +153,11 @@ const AddEventScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.addButtonFilled} onPress={handleSave}>
           <Text style={styles.addButtonText}>Save</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButtonFilled} onPress={handleSave}>
+
+        <TouchableOpacity
+          style={styles.addButtonFilled}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.addButtonText}>Cancel</Text>
         </TouchableOpacity>
       </ScrollView>
