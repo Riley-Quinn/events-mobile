@@ -18,16 +18,17 @@ import axios from 'axios';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { BASE_URL, CLOUD_FRONT_URL } from '@env';
+import moment from 'moment';
 
-const API_BASE = 'http://10.0.2.2:4000';
-const MEDIA_BASE_URL = 'https://d108ysp6ovb3mv.cloudfront.net';
-
-const ViewEvent = ({ route }) => {
+const ViewEvent = ({ route, navigation }) => {
   const { id } = route.params;
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchEvent();
@@ -37,7 +38,7 @@ const ViewEvent = ({ route }) => {
   const fetchEvent = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.get(`${API_BASE}/api/events/${id}`, {
+      const res = await axios.get(`${BASE_URL}/api/events/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEvent(res.data);
@@ -49,7 +50,7 @@ const ViewEvent = ({ route }) => {
   const fetchMedia = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.get(`${API_BASE}/api/media/event/${id}`, {
+      const res = await axios.get(`${BASE_URL}/api/media/event/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMedia(res.data);
@@ -58,12 +59,10 @@ const ViewEvent = ({ route }) => {
     }
   };
 
-  const uploadFile = async () => {
-    const token = await AsyncStorage.getItem('token');
-
+  const selectFile = async () => {
     launchImageLibrary(
       {
-        mediaType: 'mixed', // 'photo' | 'video' | 'mixed'
+        mediaType: 'mixed',
         selectionLimit: 1,
       },
       async response => {
@@ -75,29 +74,44 @@ const ViewEvent = ({ route }) => {
           return;
         }
 
-        const formData = new FormData();
-        formData.append('file', {
-          uri:
-            Platform.OS === 'ios'
-              ? asset.uri.replace('file://', '')
-              : asset.uri,
-          type: asset.type,
-          name: asset.fileName || `upload.${asset.type?.split('/')[1]}`,
-        });
-
-        try {
-          await axios.post(`${API_BASE}/api/media/upload/${id}`, formData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          fetchMedia();
-        } catch (err) {
-          Alert.alert('Upload Failed', 'Something went wrong');
-        }
+        setSelectedFile(asset);
       },
     );
+  };
+
+  const uploadFile = async () => {
+    if (!selectedFile) {
+      Alert.alert('No file selected');
+      return;
+    }
+
+    const token = await AsyncStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', {
+      uri:
+        Platform.OS === 'ios'
+          ? selectedFile.uri.replace('file://', '')
+          : selectedFile.uri,
+      type: selectedFile.type,
+      name:
+        selectedFile.fileName || `upload.${selectedFile.type?.split('/')[1]}`,
+    });
+
+    try {
+      setUploading(true); // START loader
+      await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setSelectedFile(null);
+      fetchMedia();
+    } catch (err) {
+      Alert.alert('Upload Failed', 'Something went wrong');
+    } finally {
+      setUploading(false); // STOP loader
+    }
   };
 
   const deleteMedia = async mediaId => {
@@ -112,7 +126,7 @@ const ViewEvent = ({ route }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${API_BASE}/api/media/${mediaId}`, {
+              await axios.delete(`${BASE_URL}/api/media/${mediaId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               fetchMedia();
@@ -125,12 +139,11 @@ const ViewEvent = ({ route }) => {
     );
   };
 
-  const getFileUrl = url => `${MEDIA_BASE_URL}/${url}`;
+  const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
+
   const renderMedia = item => {
     const fileUrl = getFileUrl(item.url);
     const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
-    const isPdf = /\.pdf$/i.test(item.url);
-
     return (
       <View key={item.id} style={styles.mediaBox}>
         <TouchableOpacity
@@ -147,12 +160,7 @@ const ViewEvent = ({ route }) => {
               paused
             />
           ) : (
-            <Image
-              source={{ uri: fileUrl }}
-              style={styles.mediaThumb}
-              onError={() => Alert.alert('Image failed to load')}
-              onLoad={() => console.log('Image loaded')}
-            />
+            <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
           )}
         </TouchableOpacity>
 
@@ -170,66 +178,128 @@ const ViewEvent = ({ route }) => {
     return <ActivityIndicator style={{ marginTop: 100 }} size="large" />;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{event.title}</Text>
+    <ScrollView style={{ backgroundColor: '#ffeee6', flex: 1 }}>
+      <View style={styles.header}>
+        <View style={styles.details}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="chevron-back-sharp" color="#000" size={30} />
+          </TouchableOpacity>
+          <Text style={styles.heading}>{event.title}</Text>
+        </View>
+      </View>
 
-      <Text style={styles.label}>
-        Description: <Text style={styles.value}>{event.description}</Text>
-      </Text>
-      <Text style={styles.label}>
-        Location: <Text style={styles.value}>{event.location}</Text>
-      </Text>
-      <Text style={styles.label}>
-        Date: <Text style={styles.value}>{event.date}</Text>
-      </Text>
-      <Text style={styles.label}>
-        Time:{' '}
-        <Text style={styles.value}>
-          {event.time === '00:00:00' ? 'All Day' : event.time}
-        </Text>
-      </Text>
-
-      <TouchableOpacity style={styles.uploadBtn} onPress={uploadFile}>
-        <Text style={styles.uploadText}>Upload Media</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.sectionTitle}>Uploaded Media</Text>
-      <View style={styles.mediaContainer}>{media.map(renderMedia)}</View>
-
-      {/* Media Preview Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContent}>
-            {selectedMedia && (
-              <>
-                {/\.(mp4|webm|ogg)$/i.test(selectedMedia.url) ? (
-                  <Video
-                    source={{ uri: getFileUrl(selectedMedia.url) }}
-                    style={styles.previewMedia}
-                    controls
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: getFileUrl(selectedMedia.url) }}
-                    style={styles.previewMedia}
-                    resizeMode="contain"
-                  />
-                )}
-                <TouchableOpacity
-                  onPress={() => setModalVisible(false)}
-                  style={styles.closeButton}
-                >
-                  <Text style={{ color: 'white' }}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Description</Text>
+            <Text style={styles.value}> : {event.description}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Location</Text>
+            <Text style={styles.value}> : {event.location}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Date</Text>
+            <Text style={styles.value}>
+              : {moment(event.date).format('DD MMM YYYY')}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Time</Text>
+            <Text style={styles.value}>
+              :{' '}
+              {event.time === '00:00:00'
+                ? 'All Day'
+                : moment(event.time, 'HH:mm:ss').format('hh:mm A')}
+            </Text>
           </View>
         </View>
-      </Modal>
+
+        <View style={{ marginTop: 20 }}>
+          <TouchableOpacity style={styles.uploadBtn} onPress={selectFile}>
+            <Text style={styles.uploadText}>Choose File</Text>
+          </TouchableOpacity>
+
+          {selectedFile && (
+            <>
+              <Text
+                style={{ marginTop: 10, color: '#000', textAlign: 'center' }}
+              >
+                Selected: {selectedFile.fileName}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.uploadBtn,
+                  {
+                    backgroundColor: '#28a745',
+                    marginTop: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  },
+                ]}
+                onPress={uploadFile}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                ) : null}
+                <Text style={styles.uploadText}>
+                  {uploading ? 'Uploading...' : 'Upload Selected File'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Uploaded Media</Text>
+        <View style={styles.mediaContainer}>{media.map(renderMedia)}</View>
+
+        {/* Modal for preview */}
+        <Modal
+          visible={modalVisible}
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContent}>
+              {selectedMedia && (
+                <>
+                  {/\.(mp4|webm|ogg)$/i.test(selectedMedia.url) ? (
+                    <Video
+                      source={{ uri: getFileUrl(selectedMedia.url) }}
+                      style={{ width: '100%', height: '100%' }}
+                      controls
+                      resizeMode="contain"
+                      paused={false}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: getFileUrl(selectedMedia.url) }}
+                      style={styles.previewMedia}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    style={styles.closeButton}
+                  >
+                    <Text style={{ color: 'white' }}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
     </ScrollView>
   );
 };
@@ -237,25 +307,36 @@ const ViewEvent = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  card: {
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  row: {
+    flexDirection: 'row',
+    marginLeft: 10,
   },
   label: {
     fontWeight: 'bold',
     marginTop: 8,
+    color: '#000',
+    fontSize: 18,
   },
   value: {
-    fontWeight: 'normal',
+    marginTop: 8,
+    color: '#000',
+    fontSize: 18,
   },
   uploadBtn: {
     backgroundColor: '#ff883a',
     padding: 12,
     borderRadius: 10,
-    marginTop: 20,
     alignItems: 'center',
   },
   uploadText: {
@@ -266,6 +347,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 24,
     marginBottom: 10,
+    color: '#000',
+    fontWeight: 'bold',
   },
   mediaContainer: {
     flexDirection: 'row',
@@ -313,6 +396,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     padding: 10,
     borderRadius: 8,
+  },
+  header: {
+    width: '100%',
+    paddingHorizontal: 20,
+    backgroundColor: '#ff883a',
+    paddingVertical: 40,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+  },
+  details: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginTop: 5,
+    marginLeft: 20,
+    color: '#000',
+  },
+  backButton: {
+    marginTop: 10,
   },
 });
 

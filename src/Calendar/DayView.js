@@ -22,7 +22,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-date-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
+import { BASE_URL } from '@env';
 const timeSlots = Array.from(
   { length: 24 },
   (_, i) => `${i % 12 || 12} ${i < 12 ? 'AM' : 'PM'}`,
@@ -86,13 +86,13 @@ const DayView = () => {
       const token = await AsyncStorage.getItem('token');
 
       const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
-        axios.get('http://10.0.2.2:4000/api/birthdays/all', {
+        axios.get(`${BASE_URL}/api/birthdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/events/all', {
+        axios.get(`${BASE_URL}/api/events/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('http://10.0.2.2:4000/api/specialdays/all', {
+        axios.get(`${BASE_URL}/api/specialdays/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -119,7 +119,7 @@ const DayView = () => {
       );
 
       await axios.put(
-        `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
+        `${BASE_URL}/api/birthdays/${editBirthday.id}`,
         {
           name: editBirthday.name,
           birth_date: birthDateOnly,
@@ -146,7 +146,7 @@ const DayView = () => {
             try {
               const token = await AsyncStorage.getItem('token');
               await axios.delete(
-                `http://10.0.2.2:4000/api/birthdays/${editBirthday.id}`,
+                `${BASE_URL}/api/birthdays/${editBirthday.id}`,
                 { headers: { Authorization: `Bearer ${token}` } },
               );
               setEditModalVisible(false);
@@ -170,7 +170,7 @@ const DayView = () => {
       ).format('YYYY-MM-DD');
 
       await axios.put(
-        `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+        `${BASE_URL}/api/specialdays/${editImportantDay.id}`,
         {
           name: editImportantDay.name,
           importantDay_date: importantDayDateOnly,
@@ -197,7 +197,7 @@ const DayView = () => {
             try {
               const token = await AsyncStorage.getItem('token');
               await axios.delete(
-                `http://10.0.2.2:4000/api/specialdays/${editImportantDay.id}`,
+                `${BASE_URL}/api/specialdays/${editImportantDay.id}`,
                 { headers: { Authorization: `Bearer ${token}` } },
               );
               setEditImportantModalVisible(false);
@@ -570,7 +570,7 @@ const DayView = () => {
                     };
 
                     await axios.post(
-                      'http://10.0.2.2:4000/api/birthdays/create',
+                      '${BASE_URL}/api/birthdays/create',
                       newBirthday,
                       {
                         headers: { Authorization: `Bearer ${token}` },
@@ -713,7 +713,7 @@ const DayView = () => {
                     };
 
                     await axios.post(
-                      'http://10.0.2.2:4000/api/specialdays/create',
+                      '${BASE_URL}/api/specialdays/create',
                       newImportantDate,
                       {
                         headers: { Authorization: `Bearer ${token}` },

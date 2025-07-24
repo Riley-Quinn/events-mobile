@@ -90,7 +90,13 @@ const TaskList = () => {
 
       <ScrollView contentContainerStyle={styles.taskList}>
         {tasks.map(task => (
-          <View key={task.task_id} style={styles.card}>
+          <TouchableOpacity
+            key={task.task_id}
+            style={styles.card}
+            onPress={() =>
+              navigation.navigate('ViewTask', { id: task.task_id })
+            }
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.taskTitle}>{task.title}</Text>
               <View style={styles.actionIcons}>
@@ -152,7 +158,7 @@ const TaskList = () => {
                 {task.status_name}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>

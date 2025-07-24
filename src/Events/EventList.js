@@ -82,10 +82,23 @@ const EventList = () => {
             onPress={() => navigation.navigate('ViewEvent', { id: event.id })}
           >
             <View style={styles.cardHeader}>
-              <Text style={styles.taskTitle}>{event.title}</Text>
+              <Text
+                style={[
+                  styles.taskTitle,
+                  {
+                    maxWidth: '75%',
+                  },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {event.title}
+              </Text>
               <View style={styles.actionIcons}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('EditEvent', { event })}
+                  onPress={() =>
+                    navigation.navigate('EditEvent', { eventId: event.id })
+                  }
                 >
                   <Icon name="create-outline" size={22} color="#1976d2" />
                 </TouchableOpacity>
@@ -109,14 +122,14 @@ const EventList = () => {
 
             <View style={styles.row}>
               <MaterialIcons name="event" size={18} color="#ff883a" />
-              <Text style={styles.label}>
+              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
                 {moment(event.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
               </Text>
             </View>
 
             <View style={styles.row}>
               <Icon name="time-outline" size={18} color="#ff883a" />
-              <Text style={styles.label}>
+              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
                 {event.time === '00:00:00'
                   ? 'All Day'
                   : moment(event.time, 'HH:mm:ss').format('h:mm A')}
@@ -125,12 +138,20 @@ const EventList = () => {
 
             <View style={styles.row}>
               <Icon name="location-outline" size={18} color="#ff883a" />
-              <Text style={styles.label}> {event.location}</Text>
+              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
+                {event.location}
+              </Text>
             </View>
 
             <View style={styles.row}>
               <MaterialIcons name="description" size={18} color="#ff883a" />
-              <Text style={styles.label}> {event.description}</Text>
+              <Text
+                style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {event.description}
+              </Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -189,9 +210,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   taskTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
+    marginRight: 13,
   },
   actionIcons: {
     flexDirection: 'row',
