@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BASE_URL } from '@env';
+import moment from 'moment';
 
 const EventList = () => {
   const navigation = useNavigation();
@@ -74,7 +75,12 @@ const EventList = () => {
       {/* Event List */}
       <ScrollView contentContainerStyle={styles.taskList}>
         {events.map(event => (
-          <View key={event.id} style={styles.card}>
+          <TouchableOpacity
+            key={event.id}
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('ViewEvent', { id: event.id })}
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.taskTitle}>{event.title}</Text>
               <View style={styles.actionIcons}>
@@ -103,13 +109,17 @@ const EventList = () => {
 
             <View style={styles.row}>
               <MaterialIcons name="event" size={18} color="#ff883a" />
-              <Text style={styles.label}> {event.date}</Text>
+              <Text style={styles.label}>
+                {moment(event.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
+              </Text>
             </View>
 
             <View style={styles.row}>
               <Icon name="time-outline" size={18} color="#ff883a" />
               <Text style={styles.label}>
-                {event.time === '00:00:00' ? 'All Day' : event.time}
+                {event.time === '00:00:00'
+                  ? 'All Day'
+                  : moment(event.time, 'HH:mm:ss').format('h:mm A')}
               </Text>
             </View>
 
@@ -122,7 +132,7 @@ const EventList = () => {
               <MaterialIcons name="description" size={18} color="#ff883a" />
               <Text style={styles.label}> {event.description}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
