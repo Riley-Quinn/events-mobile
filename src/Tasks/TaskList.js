@@ -136,6 +136,12 @@ const TaskList = () => {
               <Icon name="location-outline" size={18} color="#ff883a" />
               <Text style={styles.label}> {task.location}</Text>
             </View>
+            <View style={styles.row}>
+              <MaterialIcons name="description" size={18} color="#ff883a" />
+              <Text style={styles.label} numberOfLines={1} ellipsizeMode="tail">
+                {task.description}
+              </Text>
+            </View>
 
             <View style={styles.row}>
               <FontAwesome5 name="user-circle" size={18} color="#ff883a" />
@@ -222,16 +228,18 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
+    marginBottom: 8,
   },
   label: {
     fontSize: 14,
     color: '#555',
+    marginLeft: 8,
   },
+
   status: {
     fontSize: 15,
     fontWeight: 'bold',
-    marginTop: 5,
+    marginLeft: 8,
   },
 });
 

@@ -58,15 +58,14 @@ const ViewTask = ({ route, navigation }) => {
   return (
     <ScrollView style={{ backgroundColor: '#ffeee6', flex: 1 }}>
       <View style={styles.header}>
-        <View style={styles.details}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="chevron-back-sharp" color="#000" size={30} />
-          </TouchableOpacity>
-          <Text style={styles.heading}>{task.title}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="chevron-back-sharp" color="#000" size={30} />
+        </TouchableOpacity>
+
+        <Text style={styles.heading}>{task.title}</Text>
       </View>
 
       <View style={styles.container}>
@@ -75,6 +74,7 @@ const ViewTask = ({ route, navigation }) => {
             <Text style={styles.label}>Description</Text>
             <Text style={styles.value}> : {task.description}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Location</Text>
             <Text style={styles.value}> : {task.location}</Text>
@@ -121,40 +121,43 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    marginLeft: 10,
+    flexWrap: 'wrap',
+    marginBottom: 8,
   },
   label: {
     fontWeight: 'bold',
-    marginTop: 8,
     color: '#000',
     fontSize: 18,
   },
   value: {
-    marginTop: 8,
     color: '#000',
     fontSize: 18,
+    flexShrink: 1,
   },
   header: {
     width: '100%',
     paddingHorizontal: 20,
     backgroundColor: '#ff883a',
-    paddingVertical: 40,
+    paddingTop: 40,
+    paddingBottom: 20,
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 10,
+    marginLeft: 20,
+    lineHeight: 30,
+    flexWrap: 'wrap',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
   },
   details: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  heading: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginTop: 5,
-    marginLeft: 20,
-    color: '#000',
-  },
-  backButton: {
-    marginTop: 10,
   },
 });
 

@@ -180,15 +180,14 @@ const ViewEvent = ({ route, navigation }) => {
   return (
     <ScrollView style={{ backgroundColor: '#ffeee6', flex: 1 }}>
       <View style={styles.header}>
-        <View style={styles.details}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="chevron-back-sharp" color="#000" size={30} />
-          </TouchableOpacity>
-          <Text style={styles.heading}>{event.title}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="chevron-back-sharp" color="#000" size={30} />
+        </TouchableOpacity>
+
+        <Text style={styles.heading}>{event.title}</Text>
       </View>
 
       <View style={styles.container}>
@@ -197,6 +196,7 @@ const ViewEvent = ({ route, navigation }) => {
             <Text style={styles.label}>Description</Text>
             <Text style={styles.value}> : {event.description}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Location</Text>
             <Text style={styles.value}> : {event.location}</Text>
@@ -308,6 +308,32 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  columnRow: {
+    marginBottom: 10,
+  },
+
+  descriptionText: {
+    fontSize: 16,
+    color: '#000',
+    marginTop: 4,
+    lineHeight: 22,
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  label: {
+    fontWeight: 'bold',
+    color: '#000',
+    fontSize: 18,
+  },
+  value: {
+    color: '#000',
+    fontSize: 18,
+    flexShrink: 1,
+  },
+
   card: {
     borderColor: '#000',
     borderWidth: 0.1,
@@ -318,21 +344,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  row: {
-    flexDirection: 'row',
-    marginLeft: 10,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginTop: 8,
-    color: '#000',
-    fontSize: 18,
-  },
-  value: {
-    marginTop: 8,
-    color: '#000',
-    fontSize: 18,
-  },
+
   uploadBtn: {
     backgroundColor: '#ff883a',
     padding: 12,
@@ -401,23 +413,25 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     backgroundColor: '#ff883a',
-    paddingVertical: 40,
+    paddingTop: 40,
+    paddingBottom: 20,
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 10,
+    lineHeight: 30,
+    flexWrap: 'wrap',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
   },
   details: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  heading: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginTop: 5,
-    marginLeft: 20,
-    color: '#000',
-  },
-  backButton: {
-    marginTop: 10,
   },
 });
 

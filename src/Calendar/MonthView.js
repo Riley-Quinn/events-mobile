@@ -20,11 +20,12 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-date-picker';
 import { Alert } from 'react-native';
+import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const COLORS = {
-  birthdays: '#FF6B81',
-  events: '#1ABC9C',
-  importantDays: '#F8C471',
+  birthdays: '#e3d1ff',
+  events: '#d6ffea',
+  importantDays: '#ffe3bc',
 };
 
 const MonthView = () => {
@@ -35,6 +36,8 @@ const MonthView = () => {
     events: [],
     importantDays: [],
   });
+  const formattedDisplayDate = moment(currentDate).format('D,MMMM YYYY');
+
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
@@ -128,7 +131,7 @@ const MonthView = () => {
         marks[date] = { marked: true, dots: [] };
       }
       marks[date].dots.push({
-        color: COLORS[category],
+        color: '#000', // All dots black
         selectedDotColor: '#fff',
       });
     };
@@ -260,36 +263,45 @@ const MonthView = () => {
 
   return (
     <View style={styles.container}>
-      <View style={{ position: 'absolute', left: 10, top: 30, zIndex: 999 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="chevron-back" size={26} color="#000" />
-        </TouchableOpacity>
+      <View style={styles.header}>
+        <View style={styles.details}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="chevron-back-sharp" color="#000" size={30} />
+          </TouchableOpacity>
+          <Text style={styles.heading1}>Events Calendar</Text>
+        </View>
       </View>
-
-      <Calendar
-        current={currentDate}
-        onDayPress={day => setCurrentDate(day.dateString)}
-        onMonthChange={month =>
-          setVisibleMonth(
-            `${month.year}-${String(month.month).padStart(2, '0')}`,
-          )
-        }
-        markedDates={markedDates}
-        markingType={'multi-dot'}
-        theme={{
-          calendarBackground: '#ffeee6',
-          selectedDayBackgroundColor: '#ff883a',
-          selectedDayTextColor: '#fff',
-          todayTextColor: '#ff883a',
-          dayTextColor: '#000',
-          monthTextColor: '#000',
-          arrowColor: '#ff883a',
-          textMonthFontWeight: 'bold',
-          textDayFontSize: 16,
-          textMonthFontSize: 18,
-        }}
-      />
-
+      <View style={styles.calbg}>
+        <Calendar
+          current={currentDate}
+          onDayPress={day => setCurrentDate(day.dateString)}
+          onMonthChange={month =>
+            setVisibleMonth(
+              `${month.year}-${String(month.month).padStart(2, '0')}`,
+            )
+          }
+          markedDates={markedDates}
+          markingType={'multi-dot'}
+          theme={{
+            calendarBackground: '#ffeee6',
+            selectedDayBackgroundColor: '#ff883a',
+            selectedDayTextColor: '#fff',
+            todayTextColor: '#ff883a',
+            dayTextColor: '#000',
+            monthTextColor: '#000',
+            arrowColor: '#ff883a',
+            textMonthFontWeight: 'bold',
+            textDayFontSize: 16,
+            textMonthFontSize: 18,
+            textSectionTitleColor: '#000',
+            textSectionTitleFontWeight: 'bold',
+            textSectionTitleDisabledColor: '#000',
+          }}
+        />
+      </View>
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -298,7 +310,7 @@ const MonthView = () => {
         />
       ) : (
         <View style={styles.eventList}>
-          <Text style={styles.heading}>Events on {currentDate}</Text>
+          <Text style={styles.heading}>Events on {formattedDisplayDate}</Text>
           <FlatList
             data={filteredEvents}
             keyExtractor={(item, index) => index.toString()}
@@ -327,7 +339,23 @@ const MonthView = () => {
                     { backgroundColor: COLORS[item.category] },
                   ]}
                 >
-                  <Text style={styles.eventText}>{item.title}</Text>
+                  <View style={styles.eventRow}>
+                    <Text style={styles.eventText}>
+                      {item.category === 'birthdays'
+                        ? `${item.name}'s Birthday `
+                        : item.category === 'importantDays'
+                        ? ` ${item.title}`
+                        : item.title}
+                    </Text>
+
+                    {item.category === 'birthdays' ? (
+                      <Text style={styles.emoji}>🎉</Text>
+                    ) : item.category === 'importantDays' ? (
+                      <Text style={styles.emoji}>🔔</Text>
+                    ) : (
+                      <Icons name="arrow-right-circle" size={50} color="#000" />
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
             )}
@@ -413,17 +441,34 @@ const MonthView = () => {
 export default MonthView;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffeee6', padding: 30 },
-  eventList: { marginTop: 20, paddingHorizontal: 20, flex: 1 },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
+  eventList: {
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    flex: 1,
+    backgroundColor: '#ff883a',
+  },
   heading: {
     fontSize: 16,
     fontWeight: 'bold',
     color: 'black',
-    marginBottom: 10,
+    marginBottom: 20,
+  },
+  calbg: {
+    backgroundColor: '#ffeee6',
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   noEvent: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 20 },
-  eventCard: { padding: 12, borderRadius: 8, marginBottom: 10 },
-  eventText: { fontSize: 14, color: '#fff', fontWeight: 'bold' },
+  eventCard: {
+    minHeight: 60,
+    borderRadius: 8,
+    marginBottom: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  eventText: { fontSize: 14, color: '#000', fontWeight: 'bold' },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -456,4 +501,42 @@ const styles = StyleSheet.create({
   cancel: { color: '#999', fontWeight: 'bold' },
   delete: { color: '#ff4d4d', fontWeight: 'bold' },
   save: { color: '#1abc9c', fontWeight: 'bold' },
+  header: {
+    width: '100%',
+    paddingHorizontal: 20,
+    backgroundColor: '#ff883a',
+    paddingVertical: 40,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+  },
+  details: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heading1: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginTop: 5,
+    marginLeft: 20,
+    color: '#000',
+  },
+  backButton: {
+    marginTop: 10,
+  },
+  eventRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  emoji: {
+    fontSize: 40, // make emoji bigger
+  },
+
+  arrow: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#000',
+  },
 });

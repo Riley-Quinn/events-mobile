@@ -160,7 +160,7 @@ const DashboardScreen = () => {
 
           <TouchableOpacity
             style={styles.iconBox}
-            onPress={() => navigation.navigate('GalleryScreen')}
+            onPress={() => navigation.navigate('Gallery')}
           >
             <Icon
               name="image-multiple-outline"

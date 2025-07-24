@@ -52,6 +52,7 @@ const DayView = () => {
     importantDay_date: new Date(),
   });
   const [showImpDatePicker, setShowImpDatePicker] = useState(false);
+  const [tempImportantDate, setTempImportantDate] = useState(new Date());
   const [data, setData] = useState({
     birthdays: [],
     events: [],
@@ -367,7 +368,7 @@ const DayView = () => {
           onPress={() => navigation.navigate('DayView')}
           style={styles.navTabBackground}
         >
-          <Text style={styles.navTabText}>Day</Text>
+          <Text style={styles.navTabText}>Today</Text>
         </TouchableOpacity>
       </View>
 
@@ -524,7 +525,7 @@ const DayView = () => {
             >
               <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 14 }}>
                 {birthdayForm.date
-                  ? moment(birthdayForm.date).format('YYYY-MM-DD')
+                  ? moment(birthdayForm.date).format('D MMMM YYYY')
                   : 'Select Date'}
               </Text>
             </TouchableOpacity>
@@ -570,7 +571,7 @@ const DayView = () => {
                     };
 
                     await axios.post(
-                      '${BASE_URL}/api/birthdays/create',
+                      `${BASE_URL}/api/birthdays/create`,
                       newBirthday,
                       {
                         headers: { Authorization: `Bearer ${token}` },
@@ -599,148 +600,160 @@ const DayView = () => {
         </View>
       </Modal>
       {/*Add Important Day Modal */}
-      <Modal
-        visible={showImportantDayModal}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setShowImportantDayModal(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#00000055',
-          }}
+
+      {showImportantDayModal && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showImportantDayModal}
+          onRequestClose={() => setShowImportantDayModal(false)}
         >
           <View
             style={{
-              width: '85%',
-              backgroundColor: '#fff',
-              padding: 20,
-              borderRadius: 12,
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.5)',
             }}
           >
-            <Text
+            <View
               style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                textAlign: 'center',
-                marginBottom: 16,
-                color: '#000',
+                width: '90%',
+                backgroundColor: '#fff',
+                padding: 20,
+                borderRadius: 10,
               }}
             >
-              Add Important Day
-            </Text>
-            <TextInput
-              placeholder="Name"
-              placeholderTextColor="#888"
-              value={importantDayForm.name}
-              onChangeText={text =>
-                setImportantDayForm({ ...importantDayForm, name: text })
-              }
-              style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                marginBottom: 16,
-                color: '#000',
-              }}
-            />
-            <TouchableOpacity
-              style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 14,
-                marginBottom: 16,
-              }}
-              onPress={() => setShowImpDatePicker(true)}
-            >
-              <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 14 }}>
-                {importantDayForm.importantDay_date
-                  ? moment(importantDayForm.importantDay_date).format(
-                      'YYYY-MM-DD',
-                    )
-                  : 'Select Date'}
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  marginBottom: 15,
+                  color: '#333',
+                  textAlign: 'center',
+                }}
+              >
+                Add Important Day
               </Text>
-            </TouchableOpacity>
 
-            {showImpDatePicker && (
-              <DateTimePicker
-                value={importantDayForm.importantDay_date}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowImpDatePicker(false);
-                  if (selectedDate) {
-                    setShowImportantDayModal({
-                      ...importantDayForm,
-                      importantDay_date: selectedDate,
-                    });
-                  }
+              <TextInput
+                placeholder="Name"
+                value={importantDayForm.name}
+                onChangeText={text =>
+                  setImportantDayForm({ ...importantDayForm, name: text })
+                }
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#ccc',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  marginBottom: 16,
+                  fontSize: 16,
+                  color: '#000',
                 }}
               />
-            )}
-            <View
-              style={{ flexDirection: 'row', justifyContent: 'space-between' }}
-            >
+
               <TouchableOpacity
-                onPress={() => setShowImportantDayModal(false)}
+                onPress={() => setShowImpDatePicker(true)}
                 style={{
-                  backgroundColor: '#6598d5',
-                  paddingVertical: 10,
-                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderColor: '#ccc',
                   borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 14,
+                  marginBottom: 16,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                  Cancel
+                <Text
+                  style={{ color: '#000', fontWeight: 'bold', fontSize: 14 }}
+                >
+                  {tempImportantDate
+                    ? moment(tempImportantDate).format('D MMMM YYYY')
+                    : 'Select Date'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    const token = await AsyncStorage.getItem('token');
-                    const newImportantDate = {
-                      name: importantDayForm.name,
-                      importantDay_date: moment(
-                        importantDayForm.importantDay_date,
-                      ).format('YYYY-MM-DD'),
-                    };
 
-                    await axios.post(
-                      '${BASE_URL}/api/specialdays/create',
-                      newImportantDate,
-                      {
-                        headers: { Authorization: `Bearer ${token}` },
-                      },
-                    );
+              {showImpDatePicker && (
+                <DateTimePicker
+                  value={tempImportantDate || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowImpDatePicker(false);
+                    if (selectedDate) {
+                      setTempImportantDate(selectedDate);
+                    }
+                  }}
+                />
+              )}
 
-                    setShowImportantDayModal(false);
-                    setImportantDayForm({ name: '', date: new Date() });
-                    fetchAllData();
-                  } catch (err) {
-                    console.error('Failed to add birthday', err);
-                    Alert.alert('Error', 'Could not add birthday.');
-                  }
-                }}
+              <View
                 style={{
-                  backgroundColor: '#ff883a',
-                  paddingVertical: 10,
-                  paddingHorizontal: 20,
-                  borderRadius: 8,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  marginTop: 20,
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Add</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowImportantDayModal(false)}
+                  style={{
+                    backgroundColor: '#6598d5',
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      const token = await AsyncStorage.getItem('token');
+
+                      const newImportantDate = {
+                        name: importantDayForm.name,
+                        importantDay_date:
+                          moment(tempImportantDate).format('YYYY-MM-DD'),
+                      };
+
+                      await axios.post(
+                        `${BASE_URL}/api/specialdays/create`,
+                        newImportantDate,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        },
+                      );
+
+                      setImportantDayForm({ name: '' });
+                      setTempImportantDate(new Date());
+                      setShowImportantDayModal(false);
+                      fetchAllData();
+                    } catch (err) {
+                      console.error('Add important day error:', err);
+                      Alert.alert('Error', 'Could not add important day');
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#ff883a',
+                    paddingVertical: 10,
+                    paddingHorizontal: 20,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>Add</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
+
       {/* Birthday Edit Modal */}
       {editModalVisible && (
         <View style={styles.overlay}>
@@ -762,7 +775,7 @@ const DayView = () => {
                   birth_date: moment(date).format('YYYY-MM-DD'),
                 });
               }}
-              androidVariant="iosClone"
+              // androidVariant="iosClone"
             />
             <View style={styles.buttonRow}>
               <TouchableOpacity onPress={() => setEditModalVisible(false)}>
@@ -799,7 +812,7 @@ const DayView = () => {
                   importantDay_date: moment(date).format('YYYY-MM-DD'),
                 });
               }}
-              androidVariant="iosClone"
+              // androidVariant="iosClone"
             />
             <View style={styles.buttonRow}>
               <TouchableOpacity

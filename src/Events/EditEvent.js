@@ -18,7 +18,9 @@ import moment from 'moment';
 import { BASE_URL } from '@env';
 
 const EditEvent = ({ route, navigation }) => {
+  console.log('Received route.params:', route.params);
   const { eventId } = route.params;
+  console.log('Parsed eventId:', eventId);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -33,6 +35,7 @@ const EditEvent = ({ route, navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
+  // ✅ Fetch Event Details
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
@@ -75,6 +78,7 @@ const EditEvent = ({ route, navigation }) => {
     }
   }, [eventId]);
 
+  // ✅ Submit Updated Data
   const handleUpdate = async () => {
     try {
       setSaving(true);
@@ -126,7 +130,6 @@ const EditEvent = ({ route, navigation }) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.formContainer}>
-        {/* Title */}
         <Text style={styles.label}>Title</Text>
         <View style={styles.inputContainer}>
           <TextInput
@@ -138,7 +141,6 @@ const EditEvent = ({ route, navigation }) => {
           />
         </View>
 
-        {/* Location */}
         <Text style={styles.label}>Location</Text>
         <View style={styles.inputContainer}>
           <TextInput
@@ -150,7 +152,6 @@ const EditEvent = ({ route, navigation }) => {
           />
         </View>
 
-        {/* Description */}
         <Text style={styles.label}>Description</Text>
         <View style={[styles.inputContainer, { height: 80 }]}>
           <TextInput
@@ -167,7 +168,6 @@ const EditEvent = ({ route, navigation }) => {
           />
         </View>
 
-        {/* Date */}
         <Text style={styles.label}>Date</Text>
         <TouchableOpacity
           style={styles.inputContainer}
@@ -178,7 +178,6 @@ const EditEvent = ({ route, navigation }) => {
           </Text>
         </TouchableOpacity>
 
-        {/* Time */}
         <Text style={styles.label}>Time</Text>
         <TouchableOpacity
           style={styles.inputContainer}
@@ -218,7 +217,6 @@ const EditEvent = ({ route, navigation }) => {
           />
         )}
 
-        {/* Buttons */}
         <TouchableOpacity
           style={styles.addButtonFilled}
           onPress={handleUpdate}
@@ -230,10 +228,10 @@ const EditEvent = ({ route, navigation }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.addButtonFilled}
+          style={styles.addButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.addButtonText}>Cancel</Text>
+          <Text style={styles.addText}>Cancel</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -250,15 +248,6 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 6,
-    marginHorizontal: 50,
-    marginTop: 12,
-    alignSelf: 'flex-start',
   },
 
   details: {
@@ -288,9 +277,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '90%',
     height: 60,
-    marginTop: 16,
     justifyContent: 'center',
   },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    alignSelf: 'flex-start',
+    marginHorizontal: 40,
+    marginBottom: 3,
+  },
+
   input: {
     fontSize: 16,
     color: '#000',
@@ -298,10 +295,10 @@ const styles = StyleSheet.create({
   },
   addButtonFilled: {
     backgroundColor: '#ff883a',
-    paddingVertical: 20,
+    paddingVertical: 12,
     borderRadius: 30,
-    marginTop: 60,
-    marginBottom: 8,
+    marginBottom: 10,
+    marginTop: 40,
     width: '90%',
     alignItems: 'center',
   },
@@ -309,5 +306,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 22,
+  },
+  addButton: {
+    borderColor: '#FF7F2A',
+    paddingVertical: 12,
+    borderRadius: 30,
+    marginBottom: 8,
+    width: '90%',
+    borderWidth: 2,
+    marginTop: 10,
+
+    alignItems: 'center',
+  },
+  addText: {
+    color: '#000',
+    fontSize: 22,
+    fontWeight: 'bold',
   },
 });

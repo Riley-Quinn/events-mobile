@@ -19,6 +19,7 @@ import EventList from './src/Events/EventList';
 import ViewEvent from './src/Events/ViewEvent';
 import EditEvent from './src/Events/EditEvent';
 import ViewTask from './src/Tasks/ViewTask';
+import Gallery from './src/Gallery/Gallery';
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +45,7 @@ export default function App() {
           <Stack.Screen name="ViewEvent" component={ViewEvent} />
           <Stack.Screen name="EditEvent" component={EditEvent} />
           <Stack.Screen name="ViewTask" component={ViewTask} />
+          <Stack.Screen name="Gallery" component={Gallery} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

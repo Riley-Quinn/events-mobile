@@ -37,7 +37,6 @@ const AddEventScreen = ({ navigation }) => {
         date: moment(formData.date).format('YYYY-MM-DD'),
         time: moment(formData.time).format('HH:mm'),
       };
-      console.log('Form values being submitted:', Values);
 
       const res = await axios.post(`${BASE_URL}/api/events/create`, Values, {
         headers: {

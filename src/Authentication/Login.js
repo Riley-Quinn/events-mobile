@@ -82,7 +82,10 @@ const LoginScreen = () => {
           <Text style={styles.welcomeText}>Welcome</Text>
 
           <Formik
-            initialValues={{ email: '', password: '' }}
+            initialValues={{
+              email: 'superadmin@example.com',
+              password: 'Password123!',
+            }}
             validationSchema={LoginSchema}
             onSubmit={handleLogin}
           >
