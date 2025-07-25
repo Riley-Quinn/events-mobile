@@ -177,7 +177,8 @@ const Gallery = () => {
         value: event.id,
       }));
 
-      setEvents(formatted);
+      // Add "All" option at the top
+      setEvents([{ label: 'All', value: 'all' }, ...formatted]);
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to fetch events');
@@ -212,22 +213,6 @@ const Gallery = () => {
         </View>
       </View>
       <View style={styles.container1}>
-        {/* <Dropdown
-          style={styles.dropdown}
-          data={events}
-          labelField="label"
-          valueField="value"
-          placeholder="Choose an event"
-          value={selectedEvent}
-          onChange={item => {
-            setSelectedEvent(item.value);
-          }}
-          containerStyle={styles.dropdownContainer}
-          selectedTextStyle={styles.selectedText}
-          itemTextStyle={styles.itemText}
-          placeholderStyle={styles.placeholderText}
-        /> */}
-
         <Dropdown
           style={styles.dropdown}
           data={events}
@@ -237,10 +222,10 @@ const Gallery = () => {
           value={selectedEvent}
           onChange={item => {
             setSelectedEvent(item.value);
-            if (item.value) {
-              fetchMediaByEvent(item.value);
+            if (item.value === 'all') {
+              fetchAllMedia();
             } else {
-              setFlatMedia([]);
+              fetchMediaByEvent(item.value);
             }
           }}
           containerStyle={styles.dropdownContainer}

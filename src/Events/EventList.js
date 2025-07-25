@@ -74,87 +74,99 @@ const EventList = () => {
 
       {/* Event List */}
       <ScrollView contentContainerStyle={styles.taskList}>
-        {events.map(event => (
-          <TouchableOpacity
-            key={event.id}
-            style={styles.card}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('ViewEvent', { id: event.id })}
-          >
-            <View style={styles.cardHeader}>
-              <Text
-                style={[
-                  styles.taskTitle,
-                  {
-                    maxWidth: '75%',
-                  },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {event.title}
-              </Text>
-              <View style={styles.actionIcons}>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('EditEvent', { eventId: event.id })
-                  }
+        {events.length === 0 ? (
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEventsText}>No events found</Text>
+          </View>
+        ) : (
+          events.map(event => (
+            <TouchableOpacity
+              key={event.id}
+              style={styles.card}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('ViewEvent', { id: event.id })}
+            >
+              <View style={styles.cardHeader}>
+                <Text
+                  style={[
+                    styles.taskTitle,
+                    {
+                      maxWidth: '75%',
+                    },
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
-                  <Icon name="create-outline" size={22} color="#1976d2" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert('Delete Event', 'Are you sure?', [
-                      { text: 'Cancel' },
-                      {
-                        text: 'Delete',
-                        onPress: () => handleDelete(event.id),
-                        style: 'destructive',
-                      },
-                    ])
-                  }
-                  style={{ marginLeft: 12 }}
-                >
-                  <Icon name="trash-outline" size={22} color="#ff3b30" />
-                </TouchableOpacity>
+                  {event.title}
+                </Text>
+                <View style={styles.actionIcons}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('EditEvent', { eventId: event.id })
+                    }
+                  >
+                    <Icon name="create-outline" size={22} color="#1976d2" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      Alert.alert('Delete Event', 'Are you sure?', [
+                        { text: 'Cancel' },
+                        {
+                          text: 'Delete',
+                          onPress: () => handleDelete(event.id),
+                          style: 'destructive',
+                        },
+                      ])
+                    }
+                    style={{ marginLeft: 12 }}
+                  >
+                    <Icon name="trash-outline" size={22} color="#ff3b30" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <MaterialIcons name="event" size={18} color="#ff883a" />
-              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
-                {moment(event.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
-              </Text>
-            </View>
+              <View style={styles.row}>
+                <MaterialIcons name="event" size={18} color="#ff883a" />
+                <Text
+                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                >
+                  {moment(event.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
+                </Text>
+              </View>
 
-            <View style={styles.row}>
-              <Icon name="time-outline" size={18} color="#ff883a" />
-              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
-                {event.time === '00:00:00'
-                  ? 'All Day'
-                  : moment(event.time, 'HH:mm:ss').format('h:mm A')}
-              </Text>
-            </View>
+              <View style={styles.row}>
+                <Icon name="time-outline" size={18} color="#ff883a" />
+                <Text
+                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                >
+                  {event.time === '00:00:00'
+                    ? 'All Day'
+                    : moment(event.time, 'HH:mm:ss').format('h:mm A')}
+                </Text>
+              </View>
 
-            <View style={styles.row}>
-              <Icon name="location-outline" size={18} color="#ff883a" />
-              <Text style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}>
-                {event.location}
-              </Text>
-            </View>
+              <View style={styles.row}>
+                <Icon name="location-outline" size={18} color="#ff883a" />
+                <Text
+                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                >
+                  {event.location}
+                </Text>
+              </View>
 
-            <View style={styles.row}>
-              <MaterialIcons name="description" size={18} color="#ff883a" />
-              <Text
-                style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {event.description}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+              <View style={styles.row}>
+                <MaterialIcons name="description" size={18} color="#ff883a" />
+                <Text
+                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {event.description}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -226,5 +238,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: '#555',
+  },
+  noEventsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 300, // optional: shift down slightly below header
+  },
+
+  noEventsText: {
+    fontSize: 20,
+    color: '#000',
+    fontWeight: 'bold',
   },
 });

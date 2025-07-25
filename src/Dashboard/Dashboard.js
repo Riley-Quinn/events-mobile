@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -15,13 +16,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Image } from 'react-native';
 import { BASE_URL } from '@env';
-
+import moment from 'moment';
 const { width, height } = Dimensions.get('window');
 
 const DashboardScreen = () => {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
   const [roleName, setRoleName] = useState('');
+  const [todayEvents, setTodayEvents] = useState([]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -36,6 +38,7 @@ const DashboardScreen = () => {
     };
 
     loadUserData();
+    fetchTodayEvents();
   }, []);
 
   const getRoleLabel = roleId => {
@@ -54,6 +57,24 @@ const DashboardScreen = () => {
         return 'Supporter';
       default:
         return 'User';
+    }
+  };
+  const fetchTodayEvents = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.get(`${BASE_URL}/api/events/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const today = moment().format('YYYY-MM-DD');
+
+      const todaysEvents = res.data.filter(
+        event => moment(event.date).format('YYYY-MM-DD') === today,
+      );
+
+      setTodayEvents(todaysEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
     }
   };
 
@@ -102,24 +123,20 @@ const DashboardScreen = () => {
     >
       <View style={styles.header}>
         <View style={styles.topRow}>
-          <Icon name="menu" size={30} color="#000" />
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            <Image
+              source={require('../../assets/Profile.png')}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 18,
+              }}
+            />
+          </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', gap: 20 }}>
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              <Image
-                source={require('../../assets/Profile.png')}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 18,
-                }}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleLogout}>
-              <Icon name="logout" size={28} color="#000" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleLogout}>
+            <Icon name="logout" size={28} color="#000" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.details}>
@@ -139,7 +156,13 @@ const DashboardScreen = () => {
         />
         <View>
           <Text style={styles.reminderText}>Reminder</Text>
-          <Text style={styles.reminderSubText}>You have 3 events today</Text>
+          <Text style={styles.reminderSubText}>
+            {todayEvents.length > 0
+              ? `You have ${todayEvents.length} event${
+                  todayEvents.length > 1 ? 's' : ''
+                } today`
+              : 'No events today'}
+          </Text>
         </View>
       </View>
 

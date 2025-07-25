@@ -10,7 +10,6 @@ import {
   Dimensions,
   Modal,
   TouchableOpacity,
-  Pressable,
   ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
@@ -132,7 +131,6 @@ const WeekView = () => {
       const firstItem = itemsAtSlot[0];
       const extraCount = itemsAtSlot.length - 1;
 
-      // Render first event
       renderedItems.push(
         <TouchableOpacity
           key={firstItem.id}
@@ -167,7 +165,6 @@ const WeekView = () => {
         </TouchableOpacity>,
       );
 
-      // Render "+N more" if needed
       if (extraCount > 0) {
         renderedItems.push(
           <TouchableOpacity
@@ -179,7 +176,7 @@ const WeekView = () => {
             }}
             style={{
               position: 'absolute',
-              top: top + 22, // space below first event
+              top: top + 22,
               left,
               zIndex: 10,
               backgroundColor: '#555',
@@ -212,8 +209,13 @@ const WeekView = () => {
         </TouchableOpacity>
       </View>
       <View style={{ flexDirection: 'row' }}>
-        <View style={{ width: 40 }} />
-        <View style={[styles.weekHeader, { width: SCREEN_WIDTH }]}>
+        <View style={{ width: 50, marginLeft: 10 }} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ backgroundColor: '#fff', marginBottom: 10 }}
+          contentContainerStyle={{ flexDirection: 'row' }}
+        >
           {WEEK_DAYS.map((day, index) => {
             const isToday =
               daysOfWeek[index].format('YYYY-MM-DD') ===
@@ -238,7 +240,7 @@ const WeekView = () => {
               </View>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -292,44 +294,35 @@ const WeekView = () => {
           <View
             style={{
               backgroundColor: 'white',
-              padding: 10,
+              padding: 20,
               borderRadius: 10,
-              width: '60%',
+              width: '50%',
               alignItems: 'center',
+              position: 'relative',
             }}
           >
-            <Text
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
               style={{
-                fontSize: 14,
-                color: 'black',
-                fontWeight: 'bold',
-                marginBottom: 10,
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 1,
               }}
             >
-              Event
-            </Text>
+              <Icon name="close" size={22} color="#000" />
+            </TouchableOpacity>
+
             <Text
               style={{
-                fontSize: 14,
-                textAlign: 'center',
-                color: 'black',
+                fontSize: 16,
                 fontWeight: 'bold',
-                marginBottom: 10,
+                color: 'black',
+                textAlign: 'center',
               }}
             >
               {selectedTitle}
             </Text>
-            <Pressable
-              style={{
-                backgroundColor: '#1ABC9C',
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 6,
-              }}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
-            </Pressable>
           </View>
         </View>
       </Modal>
@@ -344,16 +337,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  weekHeader: {
+  weekContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    marginBottom: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
   },
+
   dayContainer: {
-    width: SCREEN_WIDTH / 7,
+    width: SCREEN_WIDTH / 7 - 5,
+    alignItems: 'center',
   },
+
   dayText: {
     fontWeight: 'bold',
     fontSize: 16,

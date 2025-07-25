@@ -16,6 +16,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddTasks = () => {
   const navigation = useNavigation();
@@ -32,6 +33,14 @@ const AddTasks = () => {
   const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [subCategoryId, setSubCategoryId] = useState(null);
+  const [subCategories, setSubCategories] = useState([]);
+  const [statusId, setStatusId] = useState(null);
+  const [statuses, setStatuses] = useState([]);
+  const [estimatedDate, setEstimatedDate] = useState('');
+  const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -41,22 +50,45 @@ const AddTasks = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const [userRes, categoryRes] = await Promise.all([
+      const [userRes, categoryRes, statusRes] = await Promise.all([
         axios.get(`${BASE_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(`${BASE_URL}/api/categories`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        axios.get(`${BASE_URL}/api/tasks/status/all?type=task`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       setUsers(userRes.data);
       setCategories(categoryRes.data.list);
+      setStatuses(statusRes.data.list);
     } catch (err) {
       console.error('Fetch error:', err);
-      Alert.alert('Error', 'Failed to load users or categories');
+      Alert.alert('Error', 'Failed to load data');
     }
   };
+  useEffect(() => {
+    const fetchSubcategories = async () => {
+      if (!categoryId) return;
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const res = await axios.get(
+          `${BASE_URL}/api/sub-category/category/${categoryId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        setSubCategories(res.data?.list || []);
+      } catch (err) {
+        console.error('Subcategories error:', err);
+      }
+    };
+
+    fetchSubcategories();
+  }, [categoryId]);
 
   const handleSubmit = async () => {
     const newErrors = {};
@@ -65,7 +97,8 @@ const AddTasks = () => {
     if (!description) newErrors.description = 'Description is required';
     if (!location) newErrors.location = 'Location is required';
     if (!assigneeId) newErrors.assigneeId = 'Assignee is required';
-
+    if (!statusId) newErrors.statusId = 'Status is required';
+    if (!estimatedDate) newErrors.estimatedDate = 'Estimated Date is required';
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -83,7 +116,9 @@ const AddTasks = () => {
         location,
         category_id: categoryId,
         assignee_id: assigneeId,
-        status_id: 1,
+        sub_category_id: subCategoryId,
+        status_id: statusId || 1,
+        estimated_date: estimatedDate || null,
       };
 
       const res = await axios.post(`${BASE_URL}/api/tasks`, taskData, {
@@ -117,7 +152,6 @@ const AddTasks = () => {
             <Text style={styles.heading}>Add Task</Text>
           </View>
         </View>
-
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowCategoryModal(true)}
@@ -131,7 +165,55 @@ const AddTasks = () => {
         {errors.categoryId && (
           <Text style={styles.errorText}>{errors.categoryId}</Text>
         )}
-
+        {categoryId && subCategories.length > 0 && (
+          <>
+            <TouchableOpacity
+              style={styles.inputContainer}
+              onPress={() => setShowSubCategoryModal(true)}
+            >
+              <Text style={styles.input}>
+                {subCategoryId
+                  ? subCategories.find(
+                      sub => sub.sub_category_id === subCategoryId,
+                    )?.name
+                  : 'Select Subcategory'}
+              </Text>
+            </TouchableOpacity>
+            <Modal
+              visible={showSubCategoryModal}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setShowSubCategoryModal(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalBox}>
+                  <TouchableOpacity
+                    style={{ position: 'absolute', top: 10, right: 10 }}
+                    onPress={() => setShowSubCategoryModal(false)}
+                  >
+                    <Icon name="close" size={24} color="#000" />
+                  </TouchableOpacity>
+                  <Text style={styles.modalHeading}>Select Subcategory</Text>
+                  <FlatList
+                    data={subCategories}
+                    keyExtractor={item => item.sub_category_id.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.modalItem}
+                        onPress={() => {
+                          setSubCategoryId(item.sub_category_id);
+                          setShowSubCategoryModal(false);
+                        }}
+                      >
+                        <Text style={{ fontSize: 16 }}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              </View>
+            </Modal>
+          </>
+        )}
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -142,7 +224,6 @@ const AddTasks = () => {
           />
         </View>
         {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-
         <View style={[styles.inputContainer, { height: 80 }]}>
           <TextInput
             style={[styles.input, { height: '100%' }]}
@@ -158,7 +239,6 @@ const AddTasks = () => {
         {errors.description && (
           <Text style={styles.errorText}>{errors.description}</Text>
         )}
-
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -171,7 +251,6 @@ const AddTasks = () => {
         {errors.location && (
           <Text style={styles.errorText}>{errors.location}</Text>
         )}
-
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowAssigneeModal(true)}
@@ -185,7 +264,78 @@ const AddTasks = () => {
         {errors.assigneeId && (
           <Text style={styles.errorText}>{errors.assigneeId}</Text>
         )}
-
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowStatusModal(true)}
+        >
+          <Text style={styles.input}>
+            {statusId
+              ? statuses.find(s => s.status_id === statusId)?.status_name
+              : 'Select Status'}
+          </Text>
+        </TouchableOpacity>
+        {errors.statusId && (
+          <Text style={styles.errorText}>{errors.statusId}</Text>
+        )}
+        <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={styles.inputContainer}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.input}>
+              {estimatedDate ? estimatedDate : 'Select Estimated Date'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {errors.estimatedDate && (
+          <Text style={styles.errorText}>{errors.estimatedDate}</Text>
+        )}
+        {showDatePicker && (
+          <DateTimePicker
+            value={estimatedDate ? new Date(estimatedDate) : new Date()}
+            mode="date"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                const formattedDate = selectedDate.toISOString().split('T')[0];
+                setEstimatedDate(formattedDate);
+              }
+            }}
+          />
+        )}
+        <Modal
+          visible={showStatusModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowStatusModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowStatusModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalHeading}>Select Status</Text>
+              <FlatList
+                data={statuses}
+                keyExtractor={item => item.status_id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setStatusId(item.status_id);
+                      setShowStatusModal(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{item.status_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
         <Modal
           visible={showAssigneeModal}
           transparent
@@ -244,11 +394,6 @@ const AddTasks = () => {
             </View>
           </View>
         </Modal>
-
-        <TouchableOpacity style={styles.addButtonOutlined}>
-          <Text style={styles.addOutlinedText}>+ Add Media</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.addButtonFilled}
           onPress={handleSubmit}
@@ -403,6 +548,30 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: 10,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 20,
+    width: '85%',
+    maxHeight: '70%',
+  },
+  modalHeading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
   },
 });
 

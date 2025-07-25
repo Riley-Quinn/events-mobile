@@ -20,6 +20,8 @@ import ViewEvent from './src/Events/ViewEvent';
 import EditEvent from './src/Events/EditEvent';
 import ViewTask from './src/Tasks/ViewTask';
 import Gallery from './src/Gallery/Gallery';
+import ViewPressRelease from './src/PressRelease/ViewPressRelease';
+import EditPressRelaese from './src/PressRelease/EditPressRelease';
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +48,8 @@ export default function App() {
           <Stack.Screen name="EditEvent" component={EditEvent} />
           <Stack.Screen name="ViewTask" component={ViewTask} />
           <Stack.Screen name="Gallery" component={Gallery} />
+          <Stack.Screen name="ViewPressRelease" component={ViewPressRelease} />
+          {/* <Stack.Screen name="EditPressRelease" component={EditPressRelaese} /> */}
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

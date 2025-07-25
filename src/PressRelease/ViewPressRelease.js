@@ -21,9 +21,9 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
 import moment from 'moment';
 
-const ViewEvent = ({ route, navigation }) => {
+const ViewPressRelease = ({ route, navigation }) => {
   const { id } = route.params;
-  const [event, setEvent] = useState(null);
+  const [press, setPress] = useState(null);
   const [media, setMedia] = useState([]);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -31,150 +31,150 @@ const ViewEvent = ({ route, navigation }) => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetchEvent();
-    fetchMedia();
+    fetchPressRelease();
+    // fetchMedia();
   }, []);
 
-  const fetchEvent = async () => {
+  const fetchPressRelease = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      const res = await axios.get(`${BASE_URL}/api/events/${id}`, {
+      const res = await axios.get(`${BASE_URL}/api/press-release/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setEvent(res.data);
+      setPress(res.data);
     } catch (err) {
-      Alert.alert('Error', 'Failed to load event');
+      Alert.alert('Error', 'Failed to load Press Release Note');
     }
   };
 
-  const fetchMedia = async () => {
-    const token = await AsyncStorage.getItem('token');
-    try {
-      const res = await axios.get(`${BASE_URL}/api/media/event/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMedia(res.data);
-    } catch (err) {
-      Alert.alert('Error', 'Failed to load media');
-    }
-  };
+  //   const fetchMedia = async () => {
+  //     const token = await AsyncStorage.getItem('token');
+  //     try {
+  //       const res = await axios.get(`${BASE_URL}/api/media/press/${id}`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setMedia(res.data);
+  //     } catch (err) {
+  //       Alert.alert('Error', 'Failed to load media');
+  //     }
+  //   };
 
-  const selectFile = async () => {
-    launchImageLibrary(
-      {
-        mediaType: 'mixed',
-        selectionLimit: 1,
-      },
-      async response => {
-        if (response.didCancel) return;
+  //   const selectFile = async () => {
+  //     launchImageLibrary(
+  //       {
+  //         mediaType: 'mixed',
+  //         selectionLimit: 1,
+  //       },
+  //       async response => {
+  //         if (response.didCancel) return;
 
-        const asset = response.assets?.[0];
-        if (!asset) {
-          Alert.alert('Error', 'No file selected');
-          return;
-        }
+  //         const asset = response.assets?.[0];
+  //         if (!asset) {
+  //           Alert.alert('Error', 'No file selected');
+  //           return;
+  //         }
 
-        setSelectedFile(asset);
-      },
-    );
-  };
+  //         setSelectedFile(asset);
+  //       },
+  //     );
+  //   };
 
-  const uploadFile = async () => {
-    if (!selectedFile) {
-      Alert.alert('No file selected');
-      return;
-    }
+  //   const uploadFile = async () => {
+  //     if (!selectedFile) {
+  //       Alert.alert('No file selected');
+  //       return;
+  //     }
 
-    const token = await AsyncStorage.getItem('token');
-    const formData = new FormData();
-    formData.append('file', {
-      uri:
-        Platform.OS === 'ios'
-          ? selectedFile.uri.replace('file://', '')
-          : selectedFile.uri,
-      type: selectedFile.type,
-      name:
-        selectedFile.fileName || `upload.${selectedFile.type?.split('/')[1]}`,
-    });
+  //     const token = await AsyncStorage.getItem('token');
+  //     const formData = new FormData();
+  //     formData.append('file', {
+  //       uri:
+  //         Platform.OS === 'ios'
+  //           ? selectedFile.uri.replace('file://', '')
+  //           : selectedFile.uri,
+  //       type: selectedFile.type,
+  //       name:
+  //         selectedFile.fileName || `upload.${selectedFile.type?.split('/')[1]}`,
+  //     });
 
-    try {
-      setUploading(true); // START loader
-      await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setSelectedFile(null);
-      fetchMedia();
-    } catch (err) {
-      Alert.alert('Upload Failed', 'Something went wrong');
-    } finally {
-      setUploading(false); // STOP loader
-    }
-  };
+  //     try {
+  //       setUploading(true); // START loader
+  //       await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'multipart/form-data',
+  //         },
+  //       });
+  //       setSelectedFile(null);
+  //       fetchMedia();
+  //     } catch (err) {
+  //       Alert.alert('Upload Failed', 'Something went wrong');
+  //     } finally {
+  //       setUploading(false); // STOP loader
+  //     }
+  //   };
 
-  const deleteMedia = async mediaId => {
-    const token = await AsyncStorage.getItem('token');
-    Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this media?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await axios.delete(`${BASE_URL}/api/media/${mediaId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              fetchMedia();
-            } catch (err) {
-              Alert.alert('Error', 'Delete failed');
-            }
-          },
-        },
-      ],
-    );
-  };
+  //   const deleteMedia = async mediaId => {
+  //     const token = await AsyncStorage.getItem('token');
+  //     Alert.alert(
+  //       'Confirm Delete',
+  //       'Are you sure you want to delete this media?',
+  //       [
+  //         { text: 'Cancel', style: 'cancel' },
+  //         {
+  //           text: 'Delete',
+  //           style: 'destructive',
+  //           onPress: async () => {
+  //             try {
+  //               await axios.delete(`${BASE_URL}/api/media/${mediaId}`, {
+  //                 headers: { Authorization: `Bearer ${token}` },
+  //               });
+  //               fetchMedia();
+  //             } catch (err) {
+  //               Alert.alert('Error', 'Delete failed');
+  //             }
+  //           },
+  //         },
+  //       ],
+  //     );
+  //   };
 
-  const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
+  //   const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
 
-  const renderMedia = item => {
-    const fileUrl = getFileUrl(item.url);
-    const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
-    return (
-      <View key={item.id} style={styles.mediaBox}>
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedMedia(item);
-            setModalVisible(true);
-          }}
-        >
-          {isVideo ? (
-            <Video
-              source={{ uri: fileUrl }}
-              style={styles.mediaThumb}
-              resizeMode="cover"
-              paused
-            />
-          ) : (
-            <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
-          )}
-        </TouchableOpacity>
+  //   const renderMedia = item => {
+  //     const fileUrl = getFileUrl(item.url);
+  //     const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
+  //     return (
+  //       <View key={item.id} style={styles.mediaBox}>
+  //         <TouchableOpacity
+  //           onPress={() => {
+  //             setSelectedMedia(item);
+  //             setModalVisible(true);
+  //           }}
+  //         >
+  //           {isVideo ? (
+  //             <Video
+  //               source={{ uri: fileUrl }}
+  //               style={styles.mediaThumb}
+  //               resizeMode="cover"
+  //               paused
+  //             />
+  //           ) : (
+  //             <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
+  //           )}
+  //         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.deleteIcon}
-          onPress={() => deleteMedia(item.id)}
-        >
-          <Icon name="trash" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  //         <TouchableOpacity
+  //           style={styles.deleteIcon}
+  //           onPress={() => deleteMedia(item.id)}
+  //         >
+  //           <Icon name="trash" size={20} color="white" />
+  //         </TouchableOpacity>
+  //       </View>
+  //     );
+  //   };
 
-  if (!event)
+  if (!press)
     return <ActivityIndicator style={{ marginTop: 100 }} size="large" />;
 
   return (
@@ -187,37 +187,23 @@ const ViewEvent = ({ route, navigation }) => {
           <Icon name="chevron-back-sharp" color="#000" size={30} />
         </TouchableOpacity>
 
-        <Text style={styles.heading}>{event.title}</Text>
+        <Text style={styles.heading}>{press.title}</Text>
       </View>
+
       <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>Description: </Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
+            <Text style={styles.label}>Notes</Text>
+            <Text style={styles.value}> : {press.notes}</Text>
           </View>
 
           <View style={styles.row}>
-            <Text style={styles.label}>Location</Text>
-            <Text style={styles.value}> : {event.location}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Date</Text>
-            <Text style={styles.value}>
-              : {moment(event.date).format('DD MMM YYYY')}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Time</Text>
-            <Text style={styles.value}>
-              :{' '}
-              {event.time === '00:00:00'
-                ? 'All Day'
-                : moment(event.time, 'HH:mm:ss').format('hh:mm A')}
-            </Text>
+            <Text style={styles.label}>Assigne</Text>
+            <Text style={styles.value}> : {press.assignee_name}</Text>
           </View>
         </View>
 
-        <View style={{ marginTop: 20 }}>
+        {/* <View style={{ marginTop: 20 }}>
           <TouchableOpacity style={styles.uploadBtn} onPress={selectFile}>
             <Text style={styles.uploadText}>Choose File</Text>
           </TouchableOpacity>
@@ -262,7 +248,6 @@ const ViewEvent = ({ route, navigation }) => {
         <Text style={styles.sectionTitle}>Uploaded Media</Text>
         <View style={styles.mediaContainer}>{media.map(renderMedia)}</View>
 
-        {/* Modal for preview */}
         <Modal
           visible={modalVisible}
           transparent={true}
@@ -297,7 +282,7 @@ const ViewEvent = ({ route, navigation }) => {
               )}
             </View>
           </View>
-        </Modal>
+        </Modal> */}
       </View>
     </ScrollView>
   );
@@ -311,24 +296,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#ff883a',
-    paddingTop: 40,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
-    marginLeft: 10,
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
   descriptionText: {
     fontSize: 16,
     color: '#000',
@@ -426,6 +393,23 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
+  header: {
+    width: '100%',
+    paddingHorizontal: 20,
+    backgroundColor: '#ff883a',
+    paddingTop: 40,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 10,
+    lineHeight: 30,
+    flexWrap: 'wrap',
+  },
   backButton: {
     alignSelf: 'flex-start',
   },
@@ -435,4 +419,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ViewEvent;
+export default ViewPressRelease;

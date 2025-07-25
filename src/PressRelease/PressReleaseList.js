@@ -89,13 +89,23 @@ const PressReleaseList = () => {
 
       <ScrollView contentContainerStyle={styles.taskList}>
         {pressRelease.map(pressrelease => (
-          <View key={pressrelease.press_id} style={styles.card}>
+          <TouchableOpacity
+            key={pressrelease.press_id}
+            style={styles.card}
+            onPress={() =>
+              navigation.navigate('ViewPressRelease', {
+                id: pressrelease.press_id,
+              })
+            }
+          >
             <View style={styles.cardHeader}>
               <Text style={styles.taskTitle}>{pressrelease.title}</Text>
               <View style={styles.actionIcons}>
                 <TouchableOpacity
                   onPress={() =>
-                    navigation.navigate('EditPressRelease', { pressrelease })
+                    navigation.navigate('EditPressRelease', {
+                      id: pressrelease.press_id,
+                    })
                   }
                 >
                   <Icon name="create-outline" size={22} color="#1976d2" />
@@ -153,7 +163,7 @@ const PressReleaseList = () => {
                 {pressrelease.status_name}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>

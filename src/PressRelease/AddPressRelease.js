@@ -27,6 +27,9 @@ const AddPressRelease = () => {
   const [assigneeId, setAssigneeId] = useState(null);
   const [users, setUsers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [statusId, setStatusId] = useState(null);
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -36,13 +39,18 @@ const AddPressRelease = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const [userRes] = await Promise.all([
+      const [userRes, statusRes] = await Promise.all([
         axios.get(`${BASE_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${BASE_URL}/api/tasks/status/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { type: 'press_release' },
         }),
       ]);
 
       setUsers(userRes.data);
+      setStatusOptions(statusRes.data?.list || []);
     } catch (err) {
       console.error('Fetch error:', err);
       Alert.alert('Error', 'Failed to load users or categories');
@@ -59,6 +67,7 @@ const AddPressRelease = () => {
     if (!title.trim()) newErrors.title = 'Title is required';
     if (!notes.trim()) newErrors.notes = 'Description is required';
     if (!assigneeId) newErrors.assigneeId = 'Assignee is required';
+    if (!statusId) newErrors.statusId = 'Status is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -74,7 +83,7 @@ const AddPressRelease = () => {
         title,
         notes,
         assignee_id: assigneeId,
-        status_id: 1,
+        status_id: statusId,
       };
 
       const res = await axios.post(
@@ -215,9 +224,83 @@ const AddPressRelease = () => {
           </View>
         )}
 
-        <TouchableOpacity style={styles.addButtonOutlined}>
-          <Text style={styles.addOutlinedText}>+ Add Media</Text>
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowStatusModal(true)}
+        >
+          <Text style={styles.input}>
+            {statusId
+              ? statusOptions.find(status => status.status_id === statusId)
+                  ?.status_name
+              : 'Select Status'}
+          </Text>
         </TouchableOpacity>
+        {errors.statusId && (
+          <Text style={styles.errorText}>{errors.statusId}</Text>
+        )}
+        {showStatusModal && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 20,
+                borderRadius: 20,
+                width: '85%',
+                maxHeight: '70%',
+              }}
+            >
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowStatusModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: 'black',
+                  fontWeight: 'bold',
+                  marginBottom: 15,
+                }}
+              >
+                Select Status
+              </Text>
+
+              {statusOptions.map(status => (
+                <TouchableOpacity
+                  key={status.status_id}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderColor: '#eee',
+                  }}
+                  onPress={() => {
+                    setStatusId(status.status_id);
+                    setShowStatusModal(false);
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 16, color: '#888', fontWeight: 'bold' }}
+                  >
+                    {status.status_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.addButtonFilled}

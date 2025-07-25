@@ -107,7 +107,7 @@ const AddEventScreen = ({ navigation }) => {
           onPress={() => setShowDatePicker(true)}
         >
           <Text style={styles.input}>
-            {moment(formData.date).format('YYYY-MM-DD')}
+            {moment(formData.date).format('D MMMM YYYY')}
           </Text>
         </TouchableOpacity>
 
@@ -154,10 +154,10 @@ const AddEventScreen = ({ navigation }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.addButtonFilled}
+          style={styles.addButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.addButtonText}>Cancel</Text>
+          <Text style={styles.addText}>Cancel</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -212,15 +212,30 @@ const styles = StyleSheet.create({
   },
   addButtonFilled: {
     backgroundColor: '#ff883a',
-    paddingVertical: 20,
+    paddingVertical: 15,
     borderRadius: 30,
-    marginTop: 60,
+    marginTop: 20,
     marginBottom: 8,
     width: '90%',
     alignItems: 'center',
   },
   addButtonText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 22,
+  },
+  addButton: {
+    borderColor: '#ff883a',
+    borderWidth: 2,
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    borderRadius: 30,
+    marginTop: 20,
+    width: '90%',
+    alignItems: 'center',
+  },
+  addText: {
+    color: '#000',
     fontWeight: 'bold',
     fontSize: 22,
   },

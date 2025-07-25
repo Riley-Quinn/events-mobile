@@ -105,10 +105,10 @@ const MonthView = () => {
       .filter(item => formatDate(item.date) === date)
       .map(item => ({
         id: `e-${item.id}`,
+        eid: item.id,
         title: item.name || item.title,
         category: 'events',
       }));
-
     const importantDays = allData.importantDays
       .filter(item => formatDate(item.importantDay_date) === date)
       .map(item => ({
@@ -317,6 +317,11 @@ const MonthView = () => {
             ListEmptyComponent={<Text style={styles.noEvent}>No events</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity
+                onPress={() => {
+                  if (item.category === 'events') {
+                    navigation.navigate('ViewEvent', { id: item.eid });
+                  }
+                }}
                 onLongPress={() => {
                   if (item.category === 'birthdays') {
                     setEditBirthday({
@@ -463,7 +468,7 @@ const styles = StyleSheet.create({
   eventCard: {
     minHeight: 60,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 15,
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,

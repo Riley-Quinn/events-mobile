@@ -289,53 +289,59 @@ const DayView = () => {
 
     return timeSlots.map((slot, index) => {
       const hour = index;
-      const slotItems = allItems.filter(
-        i => parseInt(i.time || '9') === hour, // Default to 9 AM if time missing
-      );
-
+      const slotItems = allItems.filter(i => parseInt(i.time || '9') === hour);
       return (
-        <View key={index} style={styles.slotRow}>
-          <Text style={styles.timeLabel}>{slot}</Text>
-          <View style={styles.verticalLine} />
-          <View style={styles.slotContent}>
-            {slotItems.map(item => (
-              <TouchableOpacity
-                key={`${item.category}-${item.id}`}
-                onLongPress={() => {
-                  if (item.category === 'birthdays') {
-                    setEditBirthday({
-                      id: item.id,
-                      name: item.name,
-                      birth_date: item.birth_date,
-                    });
-                    setEditModalVisible(true);
-                  }
+        <View key={index}>
+          <View style={styles.slotRow}>
+            <Text style={styles.timeLabel}>{slot}</Text>
+            <View style={styles.verticalLine} />
+            <View style={styles.slotContent}>
+              {slotItems.map(item => (
+                <TouchableOpacity
+                  key={`${item.category}-${item.id}`}
+                  onPress={() => {
+                    if (item.category === 'events') {
+                      navigation.navigate('ViewEvent', { id: item.id });
+                    }
+                  }}
+                  onLongPress={() => {
+                    if (item.category === 'birthdays') {
+                      setEditBirthday({
+                        id: item.id,
+                        name: item.name,
+                        birth_date: item.birth_date,
+                      });
+                      setEditModalVisible(true);
+                    }
 
-                  if (item.category === 'importantDays') {
-                    setEditImportantDay({
-                      id: item.id,
-                      name: item.name,
-                      importantDay_date: item.importantDay_date,
-                    });
-                    setEditImportantModalVisible(true);
-                  }
-                }}
-              >
-                <View
-                  style={[
-                    styles.eventBox,
-                    { backgroundColor: COLORS[item.category] },
-                  ]}
+                    if (item.category === 'importantDays') {
+                      setEditImportantDay({
+                        id: item.id,
+                        name: item.name,
+                        importantDay_date: item.importantDay_date,
+                      });
+                      setEditImportantModalVisible(true);
+                    }
+                  }}
                 >
-                  <Text style={styles.eventText}>
-                    {item.category === 'birthdays'
-                      ? `${item.name}'s Birthday`
-                      : item.name || item.title}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                  <View
+                    style={[
+                      styles.eventBox,
+                      { backgroundColor: COLORS[item.category] },
+                    ]}
+                  >
+                    <Text style={styles.eventText}>
+                      {item.category === 'birthdays'
+                        ? `${item.name}'s Birthday`
+                        : item.name || item.title}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
+
+          <View style={styles.horizontalLine} />
         </View>
       );
     });
@@ -345,7 +351,7 @@ const DayView = () => {
 
   return (
     <View style={styles.container}>
-      <View style={{ position: 'absolute', left: 10, top: 30, zIndex: 999 }}>
+      <View style={{ position: 'absolute', left: 10, top: 45, zIndex: 999 }}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-back" size={26} color="#000" />
         </TouchableOpacity>
@@ -438,7 +444,13 @@ const DayView = () => {
           onPress={() => setShowOptionsModal(false)}
         >
           <View style={styles.bottomSheet}>
-            {['Add Birthday', 'Add Important Day', 'Add Event'].map(text => (
+            {[
+              'Add Birthday',
+              'Add Important Day',
+              'Add Event',
+              'Add Task',
+              'Add PressNote',
+            ].map(text => (
               <TouchableOpacity
                 key={text}
                 style={styles.optionBtn}
@@ -450,6 +462,10 @@ const DayView = () => {
                     setShowBirthdayModal(true);
                   } else if (text === 'Add Important Day') {
                     setShowImportantDayModal(true);
+                  } else if (text === 'Add Task') {
+                    navigation.navigate('AddTasks');
+                  } else if (text === 'Add PressNote') {
+                    navigation.navigate('AddPressRelease');
                   } else {
                     console.error('error');
                   }
@@ -1002,13 +1018,21 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
   },
   optionBtn: {
-    paddingVertical: 14,
-    borderBottomColor: '#ddd',
-    borderBottomWidth: 1,
+    paddingVertical: 20,
+    borderBottomColor: '#000',
+    borderBottomWidth: 0.5,
+    ntWeight: 'bold',
   },
   optionText: {
     fontSize: 16,
     color: '#333',
+    fontWeight: 'bold',
+  },
+  horizontalLine: {
+    height: 1,
+    backgroundColor: '#bbb',
+    marginVertical: 4,
+    marginLeft: 60, // align with time label
   },
 });
 

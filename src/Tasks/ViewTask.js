@@ -71,8 +71,8 @@ const ViewTask = ({ route, navigation }) => {
       <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>Description</Text>
-            <Text style={styles.value}> : {task.description}</Text>
+            <Text style={styles.label}>Description: </Text>
+            <Text style={styles.descriptionText}>{task.description}</Text>
           </View>
 
           <View style={styles.row}>
@@ -84,9 +84,24 @@ const ViewTask = ({ route, navigation }) => {
             <Text style={styles.value}> : {task.category_name}</Text>
           </View>
           <View style={styles.row}>
+            <Text style={styles.label}>Sub Category</Text>
+            <Text style={styles.value}> : {task.sub_category_name}</Text>
+          </View>
+          <View style={styles.row}>
             <Text style={styles.label}>Assignee</Text>
             <Text style={styles.value}> : {task.assignee_name}</Text>
           </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Status</Text>
+            <Text style={styles.value}> : {task.status_name}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Estimated Date</Text>
+            <Text style={styles.value}>
+              : {moment(task.estimated_date).format('DD MMM YYYY')}
+            </Text>
+          </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Created At</Text>
             <Text style={styles.value}>
@@ -135,7 +150,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   header: {
-    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     backgroundColor: '#ff883a',
     paddingTop: 40,
@@ -147,10 +163,15 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 10,
-    marginLeft: 20,
-    lineHeight: 30,
+    marginLeft: 10,
+    flexShrink: 1,
     flexWrap: 'wrap',
+  },
+  descriptionText: {
+    fontSize: 18,
+    color: '#000',
+    flexShrink: 1,
+    flex: 1,
   },
   backButton: {
     alignSelf: 'flex-start',
