@@ -4,20 +4,18 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import axios from 'axios'; // replace with your `authAxios` if needed
+import axios from 'axios';
 import EmojiSelector from 'react-native-emoji-selector';
-import { format } from 'timeago.js';
-// import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Avatar } from 'react-native-elements';
 import { BASE_URL } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const CommentBox = ({ module, moduleId }) => {
   const [comment, setComment] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -26,39 +24,26 @@ const CommentBox = ({ module, moduleId }) => {
   const fetchAllComments = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
       const response = await axios.get(`${BASE_URL}/api/comments/${moduleId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        params: {
-          module: module,
-        },
+        headers: { Authorization: `Bearer ${token}` },
+        params: { module },
       });
-
-      setComments(response.data.list);
+      setComments(response.data.list || []);
     } catch (error) {
       console.error('Error fetching comments', error);
     }
   };
+
   const handleSubmit = async () => {
     if (comment.trim() !== '') {
       try {
         const token = await AsyncStorage.getItem('token');
-
         await axios.post(
           `${BASE_URL}/api/comments`,
+          { comment },
           {
-            comment: comment,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            params: {
-              module: module,
-              moduleId: moduleId,
-            },
+            headers: { Authorization: `Bearer ${token}` },
+            params: { module, moduleId },
           },
         );
 
@@ -71,16 +56,40 @@ const CommentBox = ({ module, moduleId }) => {
     }
   };
 
-  const handleEmojiSelect = emoji => {
-    setComment(prev => prev + emoji);
-  };
+  const handleEmojiSelect = emoji => setComment(prev => prev + emoji);
 
   useEffect(() => {
     fetchAllComments();
   }, []);
+
   const convertToISO = dateString => {
-    // Convert "2025-07-25 14:19:02" → "2025-07-25T14:19:02Z"
-    return dateString.replace(' ', 'T') + 'Z';
+    if (!dateString || typeof dateString !== 'string') return new Date();
+    if (!dateString.includes(' ')) return new Date(dateString);
+
+    const [datePart, timePart] = dateString.split(' ');
+    if (!datePart || !timePart) return new Date();
+
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute, second] = timePart.split(':').map(Number);
+
+    return new Date(year, month - 1, day, hour, minute, second);
+  };
+
+  // ✅ Custom Formatter
+  const getTimeAgo = createdAt => {
+    const now = new Date();
+    const past = convertToISO(createdAt);
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+
+    if (diffSec < 60) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHour < 24) return `${diffHour}h ago`;
+
+    const diffDays = Math.floor(diffHour / 24);
+    return `${diffDays}d ago`;
   };
 
   const renderItem = ({ item }) => (
@@ -88,13 +97,13 @@ const CommentBox = ({ module, moduleId }) => {
       <Avatar
         rounded
         size="small"
-        title={item.commented_username[0]}
+        title={item.commented_username?.[0] || '?'}
         containerStyle={{ backgroundColor: '#ccc', marginRight: 10 }}
       />
       <View style={{ flex: 1 }}>
         <View style={styles.commentHeader}>
           <Text style={styles.username}>{item.commented_username}</Text>
-          <Text style={styles.time}>{format(item.created_at)}</Text>
+          <Text style={styles.time}>{getTimeAgo(item.created_at)}</Text>
         </View>
         <Text style={styles.commentText}>{item.comment}</Text>
       </View>
@@ -125,9 +134,6 @@ const CommentBox = ({ module, moduleId }) => {
           multiline
         />
         <View style={styles.actions}>
-          {/* <TouchableOpacity onPress={() => setShowEmojiPicker(prev => !prev)}>
-            <Icon name="emoji-emotions" size={24} color="#333" />
-          </TouchableOpacity> */}
           <TouchableOpacity style={styles.postButton} onPress={handleSubmit}>
             <Text style={styles.postButtonText}>Post</Text>
           </TouchableOpacity>
@@ -148,6 +154,7 @@ const CommentBox = ({ module, moduleId }) => {
 };
 
 export default CommentBox;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

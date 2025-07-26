@@ -172,15 +172,27 @@ const EditTask = ({ route, navigation }) => {
       await axios.put(`${BASE_URL}/api/tasks/${taskId}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // If status has changed, update status separately
+      if (values.status_id !== initialValues.status_id) {
+        await axios.put(
+          `${BASE_URL}/api/tasks/${taskId}/status`,
+          { status_id: values.status_id },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+      }
+
       Alert.alert('Success', 'Task updated successfully!');
       navigation.goBack();
     } catch (err) {
+      console.error(err);
       Alert.alert('Error', 'Could not update task.');
     } finally {
       setSaving(false);
     }
   };
-
   if (loading) {
     return (
       <View style={styles.center}>

@@ -9,14 +9,15 @@ import {
   Dimensions,
   ImageBackground,
   Alert,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ability, updateAbility } from '../casl/ability';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { Image } from 'react-native';
 import { BASE_URL } from '@env';
 import moment from 'moment';
+
 const { width, height } = Dimensions.get('window');
 
 const DashboardScreen = () => {
@@ -24,6 +25,7 @@ const DashboardScreen = () => {
   const [userName, setUserName] = useState('');
   const [roleName, setRoleName] = useState('');
   const [todayEvents, setTodayEvents] = useState([]);
+  const [todayTasks, setTodayTasks] = useState([]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -39,6 +41,7 @@ const DashboardScreen = () => {
 
     loadUserData();
     fetchTodayEvents();
+    fetchTodayTasks();
   }, []);
 
   const getRoleLabel = roleId => {
@@ -59,6 +62,7 @@ const DashboardScreen = () => {
         return 'User';
     }
   };
+
   const fetchTodayEvents = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -67,7 +71,6 @@ const DashboardScreen = () => {
       });
 
       const today = moment().format('YYYY-MM-DD');
-
       const todaysEvents = res.data.filter(
         event => moment(event.date).format('YYYY-MM-DD') === today,
       );
@@ -75,6 +78,27 @@ const DashboardScreen = () => {
       setTodayEvents(todaysEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
+    }
+  };
+
+  const fetchTodayTasks = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      const res = await axios.get(`${BASE_URL}/api/tasks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const allTasks = res.data.list || [];
+
+      const today = moment().format('YYYY-MM-DD');
+
+      const todaysTasks = allTasks.filter(
+        task => moment(task.created_at).format('YYYY-MM-DD') === today,
+      );
+
+      setTodayTasks(todaysTasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
     }
   };
 
@@ -86,15 +110,10 @@ const DashboardScreen = () => {
         await axios.post(
           `${BASE_URL}/api/auth/logout`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
       }
 
-      // Clear all data
       await AsyncStorage.multiRemove([
         'token',
         'userName',
@@ -115,6 +134,7 @@ const DashboardScreen = () => {
       );
     }
   };
+
   return (
     <ImageBackground
       source={require('../../assets/bgg.png')}
@@ -126,11 +146,7 @@ const DashboardScreen = () => {
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <Image
               source={require('../../assets/Profile.png')}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 18,
-              }}
+              style={{ width: 40, height: 40, borderRadius: 18 }}
             />
           </TouchableOpacity>
 
@@ -146,7 +162,6 @@ const DashboardScreen = () => {
           </View>
         </View>
       </View>
-
       <View style={styles.reminder}>
         <Icon
           name="calendar-month-outline"
@@ -154,15 +169,40 @@ const DashboardScreen = () => {
           color="#FF7F2A"
           style={styles.reminderIcon}
         />
+
         <View>
           <Text style={styles.reminderText}>Reminder</Text>
-          <Text style={styles.reminderSubText}>
-            {todayEvents.length > 0
-              ? `You have ${todayEvents.length} event${
-                  todayEvents.length > 1 ? 's' : ''
-                } today`
-              : 'No events today'}
-          </Text>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '100%',
+            }}
+          >
+            <Text
+              style={[styles.reminderSubText]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {todayEvents.length > 0
+                ? `You have ${todayEvents.length} event${
+                    todayEvents.length > 1 ? 's' : ''
+                  }, `
+                : 'No events,'}
+            </Text>
+
+            <Text
+              style={[styles.reminderSubText]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {todayTasks.length > 0
+                ? ` ${todayTasks.length} task${
+                    todayTasks.length > 1 ? 's' : ''
+                  } today`
+                : ' tasks today'}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -229,11 +269,7 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     width: '100%',
     backgroundColor: '#FF7F2A',
@@ -248,22 +284,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-
-  menuIcon: {
-    alignSelf: 'flex-start',
-    marginBottom: 15,
-  },
-
-  details: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  info: {
-    marginLeft: 10,
-  },
-
+  details: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  info: { marginLeft: 10 },
   role: {
     fontSize: 14,
     color: '#000',
@@ -275,21 +297,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 10,
   },
-
-  name: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 15,
-  },
-
+  name: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15 },
   reminder: {
     backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
     marginTop: -height * 0.05,
-
     padding: 15,
     borderRadius: 20,
     elevation: 5,
@@ -299,21 +313,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     zIndex: 99,
   },
-
-  reminderIcon: {
-    marginRight: 15,
-  },
-
-  reminderText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-
+  reminderIcon: { marginRight: 15 },
+  reminderText: { fontSize: 18, fontWeight: '600', color: '#000' },
   reminderSubText: {
     fontSize: 14,
     color: '#666',
-    marginTop: 3,
+    fontWeight: 'bold',
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
 
   card: {
@@ -322,12 +329,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     marginTop: -50,
-
     paddingTop: 50,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
-
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -335,7 +340,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     marginTop: 30,
   },
-
   iconBox: {
     width: width * 0.42,
     aspectRatio: 1,
@@ -347,17 +351,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
   },
-
-  icons: {
-    marginBottom: 10,
-  },
-
-  iconLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-  },
-
+  icons: { marginBottom: 10 },
+  iconLabel: { fontSize: 16, fontWeight: '500', color: '#000' },
   addButtonFilled: {
     backgroundColor: '#FF7F2A',
     width: '100%',
@@ -366,7 +361,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
-
   addButtonOutlined: {
     borderWidth: 2,
     borderColor: '#FF7F2A',
@@ -375,18 +369,8 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: 'center',
   },
-
-  addButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-
-  addOutlinedText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  addButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  addOutlinedText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
 });
 
 export default DashboardScreen;
