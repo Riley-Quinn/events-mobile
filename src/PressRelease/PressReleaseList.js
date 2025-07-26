@@ -104,7 +104,7 @@ const PressReleaseList = () => {
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate('EditPressRelease', {
-                      id: pressrelease.press_id,
+                      pressId: pressrelease.press_id,
                     })
                   }
                 >
@@ -227,16 +227,18 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
+    marginTop: 8,
   },
   label: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 15,
+    color: '#000',
+    marginLeft: 8,
   },
   status: {
     fontSize: 15,
     fontWeight: 'bold',
     marginTop: 5,
+    marginLeft: 8,
   },
 });
 

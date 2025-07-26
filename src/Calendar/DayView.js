@@ -776,11 +776,16 @@ const DayView = () => {
           <View style={styles.popup}>
             <Text style={styles.modalTitle}>Edit Birthday</Text>
             <Text>Name</Text>
-            <TouchableOpacity>
-              <View style={styles.inputBox}>
-                <Text style={{ color: '#333' }}>{editBirthday.name}</Text>
-              </View>
-            </TouchableOpacity>
+            <TextInput
+              value={editBirthday.name}
+              onChangeText={text =>
+                setEditBirthday({ ...editBirthday, name: text })
+              }
+              placeholder="Enter name"
+              placeholderTextColor="#888"
+              style={styles.inputBox}
+            />
+
             <Text>Date</Text>
             <DatePicker
               date={new Date(editBirthday.birth_date)}
@@ -813,11 +818,15 @@ const DayView = () => {
           <View style={styles.popup}>
             <Text style={styles.modalTitle}>Edit Important Day</Text>
             <Text>Name</Text>
-            <TouchableOpacity>
-              <View style={styles.inputBox}>
-                <Text style={{ color: '#333' }}>{editImportantDay.name}</Text>
-              </View>
-            </TouchableOpacity>
+            <TextInput
+              value={editImportantDay.name}
+              onChangeText={text =>
+                setEditImportantDay({ ...editImportantDay, name: text })
+              }
+              placeholder="Enter name"
+              placeholderTextColor="#888"
+              style={styles.inputBox}
+            />
             <Text>Date</Text>
             <DatePicker
               date={new Date(editImportantDay.importantDay_date)}

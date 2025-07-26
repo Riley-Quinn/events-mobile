@@ -15,6 +15,7 @@ import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { BASE_URL } from '@env';
 import moment from 'moment';
+import CommentBox from '../comments/Comments';
 
 const ViewTask = ({ route, navigation }) => {
   const { id } = route.params;
@@ -109,6 +110,9 @@ const ViewTask = ({ route, navigation }) => {
             </Text>
           </View>
         </View>
+        <View style={styles.CommentBox}>
+          <CommentBox module={'task'} moduleId={id} />
+        </View>
       </View>
     </ScrollView>
   );
@@ -179,6 +183,17 @@ const styles = StyleSheet.create({
   details: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  CommentBox: {
+    marginTop: 20,
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 

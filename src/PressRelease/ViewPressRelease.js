@@ -20,6 +20,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
 import moment from 'moment';
+import CommentBox from '../comments/Comments';
 
 const ViewPressRelease = ({ route, navigation }) => {
   const { id } = route.params;
@@ -47,132 +48,132 @@ const ViewPressRelease = ({ route, navigation }) => {
     }
   };
 
-  //   const fetchMedia = async () => {
-  //     const token = await AsyncStorage.getItem('token');
-  //     try {
-  //       const res = await axios.get(`${BASE_URL}/api/media/press/${id}`, {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       });
-  //       setMedia(res.data);
-  //     } catch (err) {
-  //       Alert.alert('Error', 'Failed to load media');
-  //     }
-  //   };
+  const fetchMedia = async () => {
+    const token = await AsyncStorage.getItem('token');
+    try {
+      const res = await axios.get(`${BASE_URL}/api/press-media/press/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMedia(res.data);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to load media');
+    }
+  };
 
-  //   const selectFile = async () => {
-  //     launchImageLibrary(
-  //       {
-  //         mediaType: 'mixed',
-  //         selectionLimit: 1,
-  //       },
-  //       async response => {
-  //         if (response.didCancel) return;
+  const selectFile = async () => {
+    launchImageLibrary(
+      {
+        mediaType: 'mixed',
+        selectionLimit: 1,
+      },
+      async response => {
+        if (response.didCancel) return;
 
-  //         const asset = response.assets?.[0];
-  //         if (!asset) {
-  //           Alert.alert('Error', 'No file selected');
-  //           return;
-  //         }
+        const asset = response.assets?.[0];
+        if (!asset) {
+          Alert.alert('Error', 'No file selected');
+          return;
+        }
 
-  //         setSelectedFile(asset);
-  //       },
-  //     );
-  //   };
+        setSelectedFile(asset);
+      },
+    );
+  };
 
-  //   const uploadFile = async () => {
-  //     if (!selectedFile) {
-  //       Alert.alert('No file selected');
-  //       return;
-  //     }
+  const uploadFile = async () => {
+    if (!selectedFile) {
+      Alert.alert('No file selected');
+      return;
+    }
 
-  //     const token = await AsyncStorage.getItem('token');
-  //     const formData = new FormData();
-  //     formData.append('file', {
-  //       uri:
-  //         Platform.OS === 'ios'
-  //           ? selectedFile.uri.replace('file://', '')
-  //           : selectedFile.uri,
-  //       type: selectedFile.type,
-  //       name:
-  //         selectedFile.fileName || `upload.${selectedFile.type?.split('/')[1]}`,
-  //     });
+    const token = await AsyncStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', {
+      uri:
+        Platform.OS === 'ios'
+          ? selectedFile.uri.replace('file://', '')
+          : selectedFile.uri,
+      type: selectedFile.type,
+      name:
+        selectedFile.fileName || `upload.${selectedFile.type?.split('/')[1]}`,
+    });
 
-  //     try {
-  //       setUploading(true); // START loader
-  //       await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           'Content-Type': 'multipart/form-data',
-  //         },
-  //       });
-  //       setSelectedFile(null);
-  //       fetchMedia();
-  //     } catch (err) {
-  //       Alert.alert('Upload Failed', 'Something went wrong');
-  //     } finally {
-  //       setUploading(false); // STOP loader
-  //     }
-  //   };
+    try {
+      setUploading(true); // START loader
+      await axios.post(`${BASE_URL}/api/press-media/upload/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setSelectedFile(null);
+      fetchMedia();
+    } catch (err) {
+      Alert.alert('Upload Failed', 'Something went wrong');
+    } finally {
+      setUploading(false); // STOP loader
+    }
+  };
 
-  //   const deleteMedia = async mediaId => {
-  //     const token = await AsyncStorage.getItem('token');
-  //     Alert.alert(
-  //       'Confirm Delete',
-  //       'Are you sure you want to delete this media?',
-  //       [
-  //         { text: 'Cancel', style: 'cancel' },
-  //         {
-  //           text: 'Delete',
-  //           style: 'destructive',
-  //           onPress: async () => {
-  //             try {
-  //               await axios.delete(`${BASE_URL}/api/media/${mediaId}`, {
-  //                 headers: { Authorization: `Bearer ${token}` },
-  //               });
-  //               fetchMedia();
-  //             } catch (err) {
-  //               Alert.alert('Error', 'Delete failed');
-  //             }
-  //           },
-  //         },
-  //       ],
-  //     );
-  //   };
+  const deleteMedia = async mediaId => {
+    const token = await AsyncStorage.getItem('token');
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this media?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await axios.delete(`${BASE_URL}/api/press-media/${mediaId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              fetchMedia();
+            } catch (err) {
+              Alert.alert('Error', 'Delete failed');
+            }
+          },
+        },
+      ],
+    );
+  };
 
-  //   const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
+  const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
 
-  //   const renderMedia = item => {
-  //     const fileUrl = getFileUrl(item.url);
-  //     const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
-  //     return (
-  //       <View key={item.id} style={styles.mediaBox}>
-  //         <TouchableOpacity
-  //           onPress={() => {
-  //             setSelectedMedia(item);
-  //             setModalVisible(true);
-  //           }}
-  //         >
-  //           {isVideo ? (
-  //             <Video
-  //               source={{ uri: fileUrl }}
-  //               style={styles.mediaThumb}
-  //               resizeMode="cover"
-  //               paused
-  //             />
-  //           ) : (
-  //             <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
-  //           )}
-  //         </TouchableOpacity>
+  const renderMedia = item => {
+    const fileUrl = getFileUrl(item.url);
+    const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
+    return (
+      <View key={item.image_id} style={styles.mediaBox}>
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedMedia(item);
+            setModalVisible(true);
+          }}
+        >
+          {isVideo ? (
+            <Video
+              source={{ uri: fileUrl }}
+              style={styles.mediaThumb}
+              resizeMode="cover"
+              paused
+            />
+          ) : (
+            <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
+          )}
+        </TouchableOpacity>
 
-  //         <TouchableOpacity
-  //           style={styles.deleteIcon}
-  //           onPress={() => deleteMedia(item.id)}
-  //         >
-  //           <Icon name="trash" size={20} color="white" />
-  //         </TouchableOpacity>
-  //       </View>
-  //     );
-  //   };
+        <TouchableOpacity
+          style={styles.deleteIcon}
+          onPress={() => deleteMedia(item.image_id)}
+        >
+          <Icon name="trash" size={20} color="white" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (!press)
     return <ActivityIndicator style={{ marginTop: 100 }} size="large" />;
@@ -203,7 +204,7 @@ const ViewPressRelease = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* <View style={{ marginTop: 20 }}>
+        <View style={{ marginTop: 20 }}>
           <TouchableOpacity style={styles.uploadBtn} onPress={selectFile}>
             <Text style={styles.uploadText}>Choose File</Text>
           </TouchableOpacity>
@@ -282,7 +283,10 @@ const ViewPressRelease = ({ route, navigation }) => {
               )}
             </View>
           </View>
-        </Modal> */}
+        </Modal>
+      </View>
+      <View style={styles.CommentBox}>
+        <CommentBox module={'press_release'} moduleId={id} />
       </View>
     </ScrollView>
   );
@@ -295,12 +299,11 @@ const styles = StyleSheet.create({
   columnRow: {
     marginBottom: 10,
   },
-
   descriptionText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#000',
-    marginTop: 4,
-    lineHeight: 22,
+    flexShrink: 1,
+    flex: 1,
   },
   row: {
     flexDirection: 'row',
@@ -394,7 +397,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   header: {
-    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     backgroundColor: '#ff883a',
     paddingTop: 40,
@@ -406,8 +410,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
-    marginTop: 10,
-    lineHeight: 30,
+    marginLeft: 10,
+    flexShrink: 1,
     flexWrap: 'wrap',
   },
   backButton: {
@@ -416,6 +420,17 @@ const styles = StyleSheet.create({
   details: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  CommentBox: {
+    marginHorizontal: 20,
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 

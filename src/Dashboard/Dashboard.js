@@ -216,10 +216,10 @@ const DashboardScreen = () => {
         {ability.can('add', 'Media') && (
           <View style={{ marginTop: 15, width: '100%' }}>
             <TouchableOpacity
-              style={styles.addButtonOutlined}
+              style={styles.addButtonFilled}
               onPress={() => navigation.navigate('EventsList')}
             >
-              <Text style={styles.addOutlinedText}> Events</Text>
+              <Text style={styles.addButtonText}> Events</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -101,7 +101,9 @@ const TaskList = () => {
               <Text style={styles.taskTitle}>{task.title}</Text>
               <View style={styles.actionIcons}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('EditTask', { task })}
+                  onPress={() =>
+                    navigation.navigate('EditTask', { taskId: task.task_id })
+                  }
                 >
                   <Icon name="create-outline" size={22} color="#1976d2" />
                 </TouchableOpacity>

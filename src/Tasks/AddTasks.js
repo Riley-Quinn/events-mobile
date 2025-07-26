@@ -41,6 +41,7 @@ const AddTasks = () => {
   const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isImportant, setIsImportant] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -119,6 +120,7 @@ const AddTasks = () => {
         sub_category_id: subCategoryId,
         status_id: statusId || 1,
         estimated_date: estimatedDate || null,
+        is_important: isImportant ? 1 : 0,
       };
 
       const res = await axios.post(`${BASE_URL}/api/tasks`, taskData, {
@@ -277,16 +279,15 @@ const AddTasks = () => {
         {errors.statusId && (
           <Text style={styles.errorText}>{errors.statusId}</Text>
         )}
-        <View style={styles.inputContainer}>
-          <TouchableOpacity
-            style={styles.inputContainer}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.input}>
-              {estimatedDate ? estimatedDate : 'Select Estimated Date'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.input}>
+            {estimatedDate ? estimatedDate : 'Select Estimated Date'}
+          </Text>
+        </TouchableOpacity>
+
         {errors.estimatedDate && (
           <Text style={styles.errorText}>{errors.estimatedDate}</Text>
         )}
@@ -303,6 +304,27 @@ const AddTasks = () => {
             }}
           />
         )}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 15,
+            marginTop: 10,
+          }}
+        >
+          <Text style={{ fontSize: 16, color: '#000' }}>Important</Text>
+          <TouchableOpacity
+            onPress={() => setIsImportant(prev => !prev)}
+            style={{ marginLeft: 12 }}
+          >
+            <Icon
+              name={isImportant ? 'toggle' : 'toggle-outline'}
+              size={32}
+              color={isImportant ? '#ff6600' : '#aaa'}
+            />
+          </TouchableOpacity>
+        </View>
+
         <Modal
           visible={showStatusModal}
           transparent
@@ -514,16 +536,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     justifyContent: 'center',
   },
-  input: {
-    fontSize: 16,
-    color: '#000',
-    marginLeft: 20,
-  },
   addButtonFilled: {
     backgroundColor: '#ff883a',
-    paddingVertical: 20,
+    paddingVertical: 15,
     borderRadius: 30,
-    marginTop: 60,
+    marginTop: 40,
     marginBottom: 8,
     width: '90%',
     alignItems: 'center',
@@ -572,6 +589,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderColor: '#eee',
+  },
+  input: {
+    fontSize: 16,
+    color: '#000',
+    marginLeft: 20,
   },
 });
 
