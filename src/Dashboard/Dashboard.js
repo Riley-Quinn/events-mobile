@@ -208,18 +208,20 @@ const DashboardScreen = () => {
 
       <View style={styles.card}>
         <View style={styles.iconRow}>
-          <TouchableOpacity
-            style={styles.iconBox}
-            onPress={() => navigation.navigate('DayView')}
-          >
-            <Icon
-              name="calendar-month-outline"
-              size={70}
-              color="#000"
-              style={styles.icons}
-            />
-            <Text style={styles.iconLabel}>Calendar</Text>
-          </TouchableOpacity>
+          {ability.can('view', 'Event') && (
+            <TouchableOpacity
+              style={styles.iconBox}
+              onPress={() => navigation.navigate('DayView')}
+            >
+              <Icon
+                name="calendar-month-outline"
+                size={70}
+                color="#000"
+                style={styles.icons}
+              />
+              <Text style={styles.iconLabel}>Calendar</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.iconBox}
@@ -235,7 +237,7 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {ability.can('add', 'Event') && (
+        {ability.can('view', 'Media') && (
           <TouchableOpacity
             style={styles.addButtonFilled}
             onPress={() => navigation.navigate('TaskList')}
@@ -253,7 +255,7 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         )}
 
-        {ability.can('add', 'Media') && (
+        {ability.can('view', 'Event') && (
           <View style={{ marginTop: 15, width: '100%' }}>
             <TouchableOpacity
               style={styles.addButtonFilled}

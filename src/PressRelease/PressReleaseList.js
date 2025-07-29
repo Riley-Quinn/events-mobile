@@ -15,6 +15,7 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
+import { ability } from '../casl/ability';
 
 const PressReleaseList = () => {
   const navigation = useNavigation();
@@ -79,12 +80,17 @@ const PressReleaseList = () => {
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>My Press Release</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddPressRelease')}
-        >
-          <Icon name="add-circle" size={30} color="#ff883a" />
-        </TouchableOpacity>
+        {ability.can(
+          'add',
+          'Event',
+        )(
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate('AddPressRelease')}
+          >
+            <Icon name="add-circle" size={30} color="#ff883a" />
+          </TouchableOpacity>,
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.taskList}>
@@ -101,34 +107,44 @@ const PressReleaseList = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.taskTitle}>{pressrelease.title}</Text>
               <View style={styles.actionIcons}>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('EditPressRelease', {
-                      pressId: pressrelease.press_id,
-                    })
-                  }
-                >
-                  <Icon name="create-outline" size={22} color="#1976d2" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert(
-                      'Delete Press Release',
-                      'Are you sure you want to delete this Press Release?',
-                      [
-                        { text: 'Cancel' },
-                        {
-                          text: 'Delete',
-                          onPress: () => handleDelete(pressrelease.press_id),
-                          style: 'destructive',
-                        },
-                      ],
-                    )
-                  }
-                  style={{ marginLeft: 12 }}
-                >
-                  <Icon name="trash-outline" size={22} color="#ff3b30" />
-                </TouchableOpacity>
+                {ability.can(
+                  'add',
+                  'Event',
+                )(
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('EditPressRelease', {
+                        pressId: pressrelease.press_id,
+                      })
+                    }
+                  >
+                    <Icon name="create-outline" size={22} color="#1976d2" />
+                  </TouchableOpacity>,
+                )}
+                {ability.can(
+                  'add',
+                  'Event',
+                )(
+                  <TouchableOpacity
+                    onPress={() =>
+                      Alert.alert(
+                        'Delete Press Release',
+                        'Are you sure you want to delete this Press Release?',
+                        [
+                          { text: 'Cancel' },
+                          {
+                            text: 'Delete',
+                            onPress: () => handleDelete(pressrelease.press_id),
+                            style: 'destructive',
+                          },
+                        ],
+                      )
+                    }
+                    style={{ marginLeft: 12 }}
+                  >
+                    <Icon name="trash-outline" size={22} color="#ff3b30" />
+                  </TouchableOpacity>,
+                )}
               </View>
             </View>
 

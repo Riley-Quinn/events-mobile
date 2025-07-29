@@ -15,6 +15,7 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BASE_URL } from '@env';
 import moment from 'moment';
+import { ability } from '../casl/ability';
 
 const EventList = () => {
   const navigation = useNavigation();
@@ -64,12 +65,17 @@ const EventList = () => {
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>My Events</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddEvent')}
-        >
-          <Icon name="add-circle" size={30} color="#ff883a" />
-        </TouchableOpacity>
+        {ability.add(
+          'add',
+          'Event',
+        )(
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation.navigate('AddEvent')}
+          >
+            <Icon name="add-circle" size={30} color="#ff883a" />
+          </TouchableOpacity>,
+        )}
       </View>
 
       {/* Event List */}
@@ -100,28 +106,38 @@ const EventList = () => {
                   {event.title}
                 </Text>
                 <View style={styles.actionIcons}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('EditEvent', { eventId: event.id })
-                    }
-                  >
-                    <Icon name="create-outline" size={22} color="#1976d2" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() =>
-                      Alert.alert('Delete Event', 'Are you sure?', [
-                        { text: 'Cancel' },
-                        {
-                          text: 'Delete',
-                          onPress: () => handleDelete(event.id),
-                          style: 'destructive',
-                        },
-                      ])
-                    }
-                    style={{ marginLeft: 12 }}
-                  >
-                    <Icon name="trash-outline" size={22} color="#ff3b30" />
-                  </TouchableOpacity>
+                  {ability.can(
+                    'add',
+                    'Event',
+                  )(
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('EditEvent', { eventId: event.id })
+                      }
+                    >
+                      <Icon name="create-outline" size={22} color="#1976d2" />
+                    </TouchableOpacity>,
+                  )}
+                  {ability.can(
+                    'add',
+                    'Event',
+                  )(
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert('Delete Event', 'Are you sure?', [
+                          { text: 'Cancel' },
+                          {
+                            text: 'Delete',
+                            onPress: () => handleDelete(event.id),
+                            style: 'destructive',
+                          },
+                        ])
+                      }
+                      style={{ marginLeft: 12 }}
+                    >
+                      <Icon name="trash-outline" size={22} color="#ff3b30" />
+                    </TouchableOpacity>,
+                  )}
                 </View>
               </View>
 

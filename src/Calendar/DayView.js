@@ -23,6 +23,8 @@ import DatePicker from 'react-native-date-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BASE_URL } from '@env';
+import { ability, updateAbility } from '../casl/ability';
+
 const timeSlots = Array.from(
   { length: 24 },
   (_, i) => `${i % 12 || 12} ${i < 12 ? 'AM' : 'PM'}`,
@@ -256,8 +258,17 @@ const DayView = () => {
 
   const renderTabs = () => {
     const tabs = tabTouched
-      ? ['all', 'birthdays', 'events', 'importantDays']
-      : ['birthdays', 'events', 'importantDays'];
+      ? [
+          'all',
+          'birthdays',
+          ...(ability.can('view', 'Event') ? ['events'] : []),
+          'importantDays',
+        ]
+      : [
+          'birthdays',
+          ...(ability.can('view', 'Event') ? ['events'] : []),
+          'importantDays',
+        ];
 
     return (
       <View style={styles.tabContainer}>
