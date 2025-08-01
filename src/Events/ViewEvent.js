@@ -1,6 +1,4 @@
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
-  Modal,
   ActivityIndicator,
   Platform,
 } from 'react-native';
@@ -19,23 +16,19 @@ import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';
 import moment from 'moment';
 
 const ViewEvent = ({ route, navigation }) => {
   const { id } = route.params;
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
-  const [selectedMedia, setSelectedMedia] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
 
-  useEffect(() => {
-    fetchEvent();
-    fetchMedia();
-  }, []);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     const token = await AsyncStorage.getItem('token');
     try {
       const res = await axios.get(`${BASE_URL}/api/events/${id}`, {
@@ -45,9 +38,9 @@ const ViewEvent = ({ route, navigation }) => {
     } catch (err) {
       Alert.alert('Error', 'Failed to load event');
     }
-  };
+  }, [id]);
 
-  const fetchMedia = async () => {
+  const fetchMedia = useCallback(async () => {
     const token = await AsyncStorage.getItem('token');
     try {
       const res = await axios.get(`${BASE_URL}/api/media/event/${id}`, {
@@ -57,14 +50,21 @@ const ViewEvent = ({ route, navigation }) => {
     } catch (err) {
       Alert.alert('Error', 'Failed to load media');
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchEvent();
+    fetchMedia();
+  }, [fetchEvent, fetchMedia]);
 
   const selectFile = async () => {
+    if (media.length >= 4) {
+      Alert.alert('Limit Reached', 'You can only upload 4 images/videos.');
+      return;
+    }
+
     launchImageLibrary(
-      {
-        mediaType: 'mixed',
-        selectionLimit: 1,
-      },
+      { mediaType: 'mixed', selectionLimit: 1 },
       async response => {
         if (response.didCancel) return;
 
@@ -98,7 +98,7 @@ const ViewEvent = ({ route, navigation }) => {
     });
 
     try {
-      setUploading(true); // START loader
+      setUploading(true);
       await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -110,7 +110,7 @@ const ViewEvent = ({ route, navigation }) => {
     } catch (err) {
       Alert.alert('Upload Failed', 'Something went wrong');
     } finally {
-      setUploading(false); // STOP loader
+      setUploading(false);
     }
   };
 
@@ -141,28 +141,72 @@ const ViewEvent = ({ route, navigation }) => {
 
   const getFileUrl = url => `${CLOUD_FRONT_URL}/${url}`;
 
+  const shareSelectedImages = async () => {
+    if (selectedImages.length === 0) {
+      Alert.alert('No Images Selected', 'Please select images to share.');
+      return;
+    }
+
+    try {
+      const downloadedPaths = [];
+
+      for (let img of selectedImages) {
+        const imageUrl = getFileUrl(img.url);
+        const localPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${
+          img.id
+        }.jpg`;
+        await RNFS.downloadFile({ fromUrl: imageUrl, toFile: localPath })
+          .promise;
+        downloadedPaths.push('file://' + localPath);
+      }
+
+      await Share.open({
+        urls: downloadedPaths,
+        type: 'image/jpeg',
+      });
+    } catch (err) {}
+  };
+
+  const toggleSelectImage = item => {
+    const alreadySelected = selectedImages.find(img => img.id === item.id);
+    if (alreadySelected) {
+      setSelectedImages(selectedImages.filter(img => img.id !== item.id));
+    } else {
+      setSelectedImages([...selectedImages, item]);
+    }
+  };
+
   const renderMedia = item => {
     const fileUrl = getFileUrl(item.url);
     const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
+    const isSelected = selectedImages.some(img => img.id === item.id);
+
     return (
-      <View key={item.id} style={styles.mediaBox}>
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedMedia(item);
-            setModalVisible(true);
-          }}
-        >
-          {isVideo ? (
-            <Video
-              source={{ uri: fileUrl }}
-              style={styles.mediaThumb}
-              resizeMode="cover"
-              paused
-            />
-          ) : (
-            <Image source={{ uri: fileUrl }} style={styles.mediaThumb} />
-          )}
-        </TouchableOpacity>
+      <TouchableOpacity
+        key={item.id}
+        style={styles.mediaBox}
+        onPress={() => toggleSelectImage(item)}
+      >
+        {isVideo ? (
+          <Video
+            source={{ uri: fileUrl }}
+            style={styles.mediaThumb}
+            resizeMode="cover"
+            paused
+          />
+        ) : (
+          <Image
+            source={{ uri: fileUrl }}
+            style={styles.mediaThumb}
+            onError={() => {}}
+          />
+        )}
+
+        {isSelected && (
+          <View style={styles.selectedCircle}>
+            <Icon name="checkmark" size={18} color="white" />
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.deleteIcon}
@@ -170,7 +214,7 @@ const ViewEvent = ({ route, navigation }) => {
         >
           <Icon name="trash" size={20} color="white" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -188,7 +232,29 @@ const ViewEvent = ({ route, navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.heading}>{event.title}</Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            marginLeft: 'auto',
+            alignItems: 'center',
+          }}
+        >
+          <TouchableOpacity
+            onPress={shareSelectedImages}
+            style={{ marginRight: 12 }}
+          >
+            <Icon name="share-social" size={30} color="#000" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AddPressRelease')}
+          >
+            <Icon name="add-circle" size={30} color="#000" />
+          </TouchableOpacity>
+        </View>
       </View>
+
       <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.row}>
@@ -200,12 +266,15 @@ const ViewEvent = ({ route, navigation }) => {
             <Text style={styles.label}>Location</Text>
             <Text style={styles.value}> : {event.location}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Date</Text>
             <Text style={styles.value}>
+              {' '}
               : {moment(event.date).format('DD MMM YYYY')}
             </Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Time</Text>
             <Text style={styles.value}>
@@ -225,32 +294,25 @@ const ViewEvent = ({ route, navigation }) => {
           {selectedFile && (
             <>
               <Text
-                style={{ marginTop: 10, color: '#000', textAlign: 'center' }}
+                style={{ marginTop: 10, textAlign: 'center', color: '#000' }}
               >
                 Selected: {selectedFile.fileName}
               </Text>
-
               <TouchableOpacity
                 style={[
                   styles.uploadBtn,
-                  {
-                    backgroundColor: '#28a745',
-                    marginTop: 10,
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  },
+                  { backgroundColor: '#28a745', marginTop: 10 },
                 ]}
                 onPress={uploadFile}
                 disabled={uploading}
               >
-                {uploading ? (
+                {uploading && (
                   <ActivityIndicator
                     size="small"
                     color="#fff"
                     style={{ marginRight: 8 }}
                   />
-                ) : null}
+                )}
                 <Text style={styles.uploadText}>
                   {uploading ? 'Uploading...' : 'Upload Selected File'}
                 </Text>
@@ -261,56 +323,14 @@ const ViewEvent = ({ route, navigation }) => {
 
         <Text style={styles.sectionTitle}>Uploaded Media</Text>
         <View style={styles.mediaContainer}>{media.map(renderMedia)}</View>
-
-        {/* Modal for preview */}
-        <Modal
-          visible={modalVisible}
-          transparent={true}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalBackground}>
-            <View style={styles.modalContent}>
-              {selectedMedia && (
-                <>
-                  {/\.(mp4|webm|ogg)$/i.test(selectedMedia.url) ? (
-                    <Video
-                      source={{ uri: getFileUrl(selectedMedia.url) }}
-                      style={{ width: '100%', height: '100%' }}
-                      controls
-                      resizeMode="contain"
-                      paused={false}
-                    />
-                  ) : (
-                    <Image
-                      source={{ uri: getFileUrl(selectedMedia.url) }}
-                      style={styles.previewMedia}
-                      resizeMode="contain"
-                    />
-                  )}
-                  <TouchableOpacity
-                    onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
-                  >
-                    <Text style={{ color: 'white' }}>Close</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-        </Modal>
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-  columnRow: {
-    marginBottom: 10,
-  },
-
+  container: { padding: 20 },
+  plusIcon: { marginLeft: 10 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -327,30 +347,7 @@ const styles = StyleSheet.create({
     color: '#000',
     marginLeft: 10,
     flexShrink: 1,
-    flexWrap: 'wrap',
   },
-  descriptionText: {
-    fontSize: 16,
-    color: '#000',
-    marginTop: 4,
-    lineHeight: 22,
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  label: {
-    fontWeight: 'bold',
-    color: '#000',
-    fontSize: 18,
-  },
-  value: {
-    color: '#000',
-    fontSize: 18,
-    flexShrink: 1,
-  },
-
   card: {
     borderColor: '#000',
     borderWidth: 0.1,
@@ -361,17 +358,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-
+  row: { flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' },
+  label: { fontWeight: 'bold', color: '#000', fontSize: 18 },
+  value: { color: '#000', fontSize: 18, flexShrink: 1 },
+  descriptionText: { fontSize: 16, color: '#000', marginTop: 4 },
   uploadBtn: {
     backgroundColor: '#ff883a',
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
   },
-  uploadText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  uploadText: { color: '#fff', fontWeight: 'bold' },
   sectionTitle: {
     fontSize: 18,
     marginTop: 24,
@@ -379,22 +376,9 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: 'bold',
   },
-  mediaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  mediaBox: {
-    width: 110,
-    height: 110,
-    margin: 6,
-    position: 'relative',
-  },
-  mediaThumb: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
+  mediaContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  mediaBox: { width: 110, height: 110, margin: 6, position: 'relative' },
+  mediaThumb: { width: '100%', height: '100%', borderRadius: 8 },
   deleteIcon: {
     position: 'absolute',
     top: 5,
@@ -403,35 +387,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
   },
-  modalBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    height: '80%',
-  },
-  previewMedia: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  closeButton: {
+  selectedCircle: {
     position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    backgroundColor: '#333',
-    padding: 10,
-    borderRadius: 8,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-  },
-  details: {
-    flexDirection: 'row',
+    top: 5,
+    left: 5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ff883a',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

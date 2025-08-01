@@ -1,7 +1,7 @@
 /* eslint-disable no-shadow */
 /* eslint-disable radix */
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   View,
@@ -14,6 +14,7 @@ import {
   TextInput,
   Modal,
   Pressable,
+  Animated,
 } from 'react-native';
 import axios from 'axios';
 import moment from 'moment';
@@ -34,6 +35,7 @@ const COLORS = {
   birthdays: '#FF6B81',
   events: '#1ABC9C',
   importantDays: '#F8C471',
+  tasks: '#4A90E2',
 };
 
 const DayView = () => {
@@ -58,6 +60,7 @@ const DayView = () => {
   const [data, setData] = useState({
     birthdays: [],
     events: [],
+    tasks: [],
     importantDays: [],
   });
   const [loading, setLoading] = useState(false);
@@ -79,6 +82,25 @@ const DayView = () => {
 
   const navigation = useNavigation();
 
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(blinkAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [blinkAnim]);
+
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -88,22 +110,27 @@ const DayView = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
-        axios.get(`${BASE_URL}/api/birthdays/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${BASE_URL}/api/events/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${BASE_URL}/api/specialdays/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const [birthdaysRes, eventsRes, specialDaysRes, tasksRes] =
+        await Promise.all([
+          axios.get(`${BASE_URL}/api/birthdays/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/events/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/specialdays/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/tasks?all=true`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
       setData({
         birthdays: birthdaysRes.data,
         events: eventsRes.data,
         importantDays: specialDaysRes.data,
+        tasks: tasksRes.data.list,
       });
     } catch (err) {
       console.error('Error fetching data', err);
@@ -115,8 +142,6 @@ const DayView = () => {
   const handleUpdateBirthday = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
-      // Extract only date part to ensure correct format
       const birthDateOnly = moment(editBirthday.birth_date).format(
         'YYYY-MM-DD',
       );
@@ -167,7 +192,6 @@ const DayView = () => {
   const handleUpdateImportantDay = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
       const importantDayDateOnly = moment(
         editImportantDay.importantDay_date,
       ).format('YYYY-MM-DD');
@@ -235,25 +259,33 @@ const DayView = () => {
               ? 'birthdays'
               : key === 'date'
               ? 'events'
+              : key === 'task_date'
+              ? 'tasks'
               : 'importantDays',
         }));
 
     const birthdays = filterByDate(data.birthdays, 'birth_date');
     const events = filterByDate(data.events, 'date');
+    const tasks = data.tasks
+      .filter(task => moment(task.date).format('YYYY-MM-DD') === selectedDate)
+      .map(task => ({
+        ...task,
+        category: 'tasks', // ✅ Force tasks category
+      }));
     const importantDays = filterByDate(data.importantDays, 'importantDay_date');
 
-    const allItems = [...birthdays, ...events, ...importantDays];
+    const allItems = [...birthdays, ...events, ...importantDays, ...tasks];
 
     if (selectedTab) {
       return {
         allItems: allItems.filter(item => item.category === selectedTab),
         birthdays,
         events,
+        tasks,
         importantDays,
       };
     }
-
-    return { allItems, birthdays, events, importantDays };
+    return { allItems, birthdays, events, tasks, importantDays };
   };
 
   const renderTabs = () => {
@@ -338,9 +370,20 @@ const DayView = () => {
                   <View
                     style={[
                       styles.eventBox,
-                      { backgroundColor: COLORS[item.category] },
+                      {
+                        backgroundColor: COLORS[item.category],
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      },
                     ]}
                   >
+                    {item.is_important === 1 && (
+                      <Animated.View
+                        style={{ opacity: blinkAnim, marginRight: 5 }}
+                      >
+                        <Icon name="star" size={18} color="red" />
+                      </Animated.View>
+                    )}
                     <Text style={styles.eventText}>
                       {item.category === 'birthdays'
                         ? `${item.name}'s Birthday`
@@ -358,7 +401,7 @@ const DayView = () => {
     });
   };
 
-  const { birthdays, events, importantDays } = getFilteredItems();
+  const { birthdays, events, tasks, importantDays } = getFilteredItems();
 
   return (
     <View style={styles.container}>
@@ -411,6 +454,11 @@ const DayView = () => {
               <Text style={styles.countText}>Events: {events.length}</Text>
             </View>
           )}
+          {tasks.length > 0 && (
+            <View style={[styles.countBox, { backgroundColor: COLORS.tasks }]}>
+              <Text style={styles.countText}>Tasks: {tasks.length}</Text>
+            </View>
+          )}
           {importantDays.length > 0 && (
             <View
               style={[
@@ -425,7 +473,6 @@ const DayView = () => {
           )}
         </View>
       </View>
-
       {loading ? (
         <ActivityIndicator
           size="large"

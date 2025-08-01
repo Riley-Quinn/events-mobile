@@ -7,18 +7,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  ImageBackground,
-  Alert,
   Image,
+  ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { ability, updateAbility } from '../casl/ability';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { BASE_URL } from '@env';
 import moment from 'moment';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const DashboardScreen = () => {
   const navigation = useNavigation();
@@ -26,22 +24,84 @@ const DashboardScreen = () => {
   const [roleName, setRoleName] = useState('');
   const [todayEvents, setTodayEvents] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
+  const [birthdayNames, setBirthdayNames] = useState([]);
+  const [taskStatusCounts, setTaskStatusCounts] = useState({});
+  const [pressReleaseCounts, setPressReleaseCounts] = useState({});
 
   useEffect(() => {
     const loadUserData = async () => {
       const name = await AsyncStorage.getItem('userName');
       const roleId = await AsyncStorage.getItem('roleId');
-      const permissions = JSON.parse(await AsyncStorage.getItem('permissions'));
-
       setUserName(name || 'User');
       setRoleName(getRoleLabel(roleId));
-
-      updateAbility(permissions);
     };
 
     loadUserData();
     fetchTodayEvents();
     fetchTodayTasks();
+    fetchTodayBirthdays();
+
+    const fetchStatusCounts = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+
+        // ✅ Fetch tasks
+        const resTasks = await axios.get(`${BASE_URL}/api/tasks?all=true`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('✅ Tasks API Response:', resTasks.data.list);
+
+        const tasks = Array.isArray(resTasks.data.list)
+          ? resTasks.data.list
+          : [];
+
+        const taskCounts = tasks.reduce(
+          (acc, task) => {
+            const s = task.status_name ?? task.status;
+            if (acc[s] !== undefined) acc[s] += 1;
+            return acc;
+          },
+          {
+            Open: 0,
+            Pending: 0,
+            'In Progress': 0,
+            'On-Hold': 0,
+            Done: 0,
+            Closed: 0,
+          },
+        );
+
+        setTaskStatusCounts(taskCounts);
+
+        const resPR = await axios.get(`${BASE_URL}/api/press-release/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const prs = Array.isArray(resPR.data) ? resPR.data : [];
+
+        const pressCounts = prs.reduce(
+          (acc, pr) => {
+            const s = pr.status_name ?? pr.status;
+            if (acc[s] !== undefined) acc[s] += 1;
+            return acc;
+          },
+          {
+            Draft: 0,
+            'Open for Review': 0,
+            'Ready to Publish': 0,
+            'Feedback Pending': 0,
+            Unpublish: 0,
+            Published: 0,
+          },
+        );
+
+        setPressReleaseCounts(pressCounts);
+      } catch (err) {
+        console.error('Error fetching status counts:', err);
+      }
+    };
+
+    fetchStatusCounts();
   }, []);
 
   const getRoleLabel = roleId => {
@@ -69,310 +129,594 @@ const DashboardScreen = () => {
       const res = await axios.get(`${BASE_URL}/api/events/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const today = moment().format('YYYY-MM-DD');
-      const todaysEvents = res.data.filter(
-        event => moment(event.date).format('YYYY-MM-DD') === today,
+      setTodayEvents(
+        res.data.filter(e => moment(e.date).format('YYYY-MM-DD') === today),
       );
-
-      setTodayEvents(todaysEvents);
-    } catch (error) {
-      console.error('Error fetching events:', error);
+    } catch (err) {
+      console.error('Events error', err);
     }
   };
 
   const fetchTodayTasks = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
       const res = await axios.get(`${BASE_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const allTasks = res.data.list || [];
 
       const today = moment().format('YYYY-MM-DD');
+      const allTasks = res.data.list || [];
 
-      const todaysTasks = allTasks.filter(
-        task => moment(task.created_at).format('YYYY-MM-DD') === today,
+      const filteredTasks = allTasks.filter(
+        t => moment(t.created_at).format('YYYY-MM-DD') === today,
       );
-
-      setTodayTasks(todaysTasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
+      setTodayTasks(filteredTasks);
+    } catch (err) {
+      console.error('Tasks error', err);
     }
   };
 
-  const handleLogout = async () => {
+  const fetchTodayBirthdays = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
-      if (token) {
-        await axios.post(
-          `${BASE_URL}/api/auth/logout`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-      }
-
-      await AsyncStorage.multiRemove([
-        'token',
-        'userName',
-        'roleId',
-        'userId',
-        'permissions',
-      ]);
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
+      const res = await axios.get(`${BASE_URL}/api/birthdays/all`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    } catch (error) {
-      console.error('Logout error', error);
-      Alert.alert(
-        'Logout Failed',
-        error.response?.data?.message || error.message,
+
+      const today = moment().format('YYYY-MM-DD');
+      const todayBirthdays = res.data.filter(
+        b => moment(b.date).format('YYYY-MM-DD') === today,
       );
+
+      setBirthdayNames(todayBirthdays.map(b => b.name));
+    } catch (err) {
+      console.error('Birthdays error', err);
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/bgg.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <ScrollView style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
-        <View style={styles.topRow}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Image
-              source={require('../../assets/Profile.png')}
-              style={{ width: 40, height: 40, borderRadius: 18 }}
-            />
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.menuButton}>
+          <Icon name="menu" size={28} color="#000" />
+        </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleLogout}>
-            <Icon name="logout" size={28} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.details}>
-          <View style={styles.info}>
-            <Text style={styles.role}>{roleName}</Text>
+        <View style={styles.headerContent}>
+          <Image
+            source={require('../../assets/Profile.png')}
+            style={styles.avatar}
+          />
+          <View>
+            <Text style={styles.roleBadge}>{roleName}</Text>
             <Text style={styles.name}>{userName}</Text>
           </View>
         </View>
       </View>
-      <View style={styles.reminder}>
-        <Icon
-          name="calendar-month-outline"
-          size={70}
-          color="#FF7F2A"
-          style={styles.reminderIcon}
-        />
 
-        <View>
-          <Text style={styles.reminderText}>Reminder</Text>
+      {/* BIRTHDAY CARD */}
+      <View style={styles.birthdayWrapper}>
+        <View style={styles.birthdayCard}>
+          <Image
+            source={require('../../assets/confetti.png')} // ✅ your birthday image
+            style={{ width: 35, height: 35 }} // ✅ same size as icon
+            resizeMode="contain"
+          />
 
-          <View
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.birthdayTitle}>Happy Birthday</Text>
+            <Text style={[styles.birthdayText, { marginTop: 6 }]}>
+              {birthdayNames.length > 0
+                ? birthdayNames.join(', ')
+                : 'No Birthdays Today'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          paddingHorizontal: 20,
+          marginTop: 20,
+        }}
+      >
+        {/* Task Status Header with ^ icon */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text
             style={{
-              flexDirection: 'row',
-              width: '100%',
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#000',
+              marginRight: 15,
             }}
           >
-            <Text
-              style={[styles.reminderSubText]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {todayEvents.length > 0
-                ? `You have ${todayEvents.length} event${
-                    todayEvents.length > 1 ? 's' : ''
-                  }, `
-                : 'No events,'}
-            </Text>
+            Task Status
+          </Text>
 
-            <Text
-              style={[styles.reminderSubText]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {todayTasks.length > 0
-                ? ` ${todayTasks.length} task${
-                    todayTasks.length > 1 ? 's' : ''
-                  } today`
-                : ' tasks today'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.iconRow}>
-          {ability.can('view', 'Event') && (
-            <TouchableOpacity
-              style={styles.iconBox}
-              onPress={() => navigation.navigate('DayView')}
-            >
-              <Icon
-                name="calendar-month-outline"
-                size={70}
-                color="#000"
-                style={styles.icons}
-              />
-              <Text style={styles.iconLabel}>Calendar</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.iconBox}
-            onPress={() => navigation.navigate('Gallery')}
-          >
-            <Icon
-              name="image-multiple-outline"
-              size={70}
-              color="#000"
-              style={styles.icons}
+          <TouchableOpacity onPress={() => navigation.navigate('TaskList')}>
+            <Image
+              source={require('../../assets/top-right.png')} // ✅ replace with your image path
+              style={{ width: 10, height: 10 }} // ✅ same size as icon
+              resizeMode="contain"
             />
-            <Text style={styles.iconLabel}>Gallery</Text>
           </TouchableOpacity>
         </View>
 
-        {ability.can('view', 'Media') && (
-          <TouchableOpacity
-            style={styles.addButtonFilled}
-            onPress={() => navigation.navigate('TaskList')}
+        {/* Press Release Status Header with ^ icon */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: 'bold',
+              color: '#000',
+              marginRight: 15,
+            }}
           >
-            <Text style={styles.addButtonText}>Tasks</Text>
-          </TouchableOpacity>
-        )}
-
-        {ability.can('add', 'Media') && (
+            Press Release Status
+          </Text>
           <TouchableOpacity
-            style={styles.addButtonOutlined}
             onPress={() => navigation.navigate('PressReleaseList')}
           >
-            <Text style={styles.addOutlinedText}>Press Release</Text>
+            <Image
+              source={require('../../assets/top-right.png')} // ✅ replace with your image path
+              style={{ width: 10, height: 10 }} // ✅ same size as icon
+              resizeMode="contain"
+            />
           </TouchableOpacity>
-        )}
-
-        {ability.can('view', 'Event') && (
-          <View style={{ marginTop: 15, width: '100%' }}>
-            <TouchableOpacity
-              style={styles.addButtonFilled}
-              onPress={() => navigation.navigate('EventsList')}
-            >
-              <Text style={styles.addButtonText}> Events</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        </View>
       </View>
-    </ImageBackground>
+
+      <View style={styles.rowContainer}>
+        <View style={{ flex: 1, marginRight: 10 }}>
+          {[
+            {
+              icon: 'playlist-check',
+              label: 'Open',
+              bg: '#FF9AA8',
+              text: '#974D58',
+            },
+            {
+              icon: 'clock-outline',
+              label: 'Pending',
+              bg: '#FFE0A2',
+              text: '#987121',
+            },
+            {
+              icon: 'progress-clock',
+              label: 'In Progress',
+              bg: '#AED0FE',
+              text: '#2D5996',
+            },
+            {
+              icon: 'pause-circle-outline',
+              label: 'On-Hold',
+              bg: '#FBD2A8',
+              text: '#2E1B1B',
+            },
+            {
+              icon: 'check-circle-outline',
+              label: 'Done',
+              bg: '#8BE9AA',
+              text: '#29613C',
+            },
+            {
+              icon: 'close-circle-outline',
+              label: 'Closed',
+              bg: '#EBEBEB',
+              text: '#29613C',
+            },
+          ].map((item, i) => (
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 3,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: item.bg,
+                  padding: 6,
+                  borderRadius: 20,
+                }}
+              >
+                <Icon name={item.icon} size={20} color={item.text} />
+              </View>
+
+              <Text
+                style={{
+                  flex: 1,
+                  marginLeft: 13,
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: item.text,
+                }}
+              >
+                {item.label}
+              </Text>
+
+              <Text
+                style={{
+                  marginRight: 30,
+
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  color: '#000', // ✅ count always black
+                }}
+              >
+                {taskStatusCounts[item.label] || 0}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <View style={{ flex: 1 }}>
+          {[
+            {
+              image: require('../../assets/draft.png'),
+              label: 'Draft',
+              bg: '#FF9AA8',
+              text: '#080808',
+            },
+            {
+              image: require('../../assets/open-book.png'),
+              label: 'Open for Review',
+              bg: '#FBD2A8',
+              text: '#080808',
+            },
+            {
+              image: require('../../assets/book.png'),
+              label: 'Ready to Publish',
+              bg: '#8BE9AA',
+              text: '#080808',
+            },
+            {
+              image: require('../../assets/paper-plane.png'),
+              label: 'Feedback Pending',
+              bg: '#FBD2A8',
+              text: '#080808',
+            },
+            {
+              image: require('../../assets/book.png'),
+              label: 'Published',
+              bg: '#8BE9AA',
+              text: '#080808',
+            },
+            {
+              image: require('../../assets/paper-plane.png'),
+              label: 'Unpublished',
+              bg: '#AED0FE',
+              text: '#080808',
+            },
+          ].map((item, i) => (
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 3,
+              }}
+            >
+              {/* ✅ Image with background */}
+              <View
+                style={{
+                  backgroundColor: item.bg,
+                  padding: 6,
+                  borderRadius: 20,
+                }}
+              >
+                <Image
+                  source={item.image}
+                  style={{ width: 20, height: 20 }}
+                  resizeMode="contain"
+                />
+              </View>
+
+              {/* ✅ Status Label */}
+              <Text
+                style={{
+                  flex: 1,
+                  marginLeft: 13,
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: item.text,
+                }}
+              >
+                {item.label}
+              </Text>
+
+              {/* ✅ Count (always black) */}
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  color: '#000',
+                }}
+              >
+                {pressReleaseCounts[item.label] || 0}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      {/* ✅ Today Tasks */}
+      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={styles.sectionTitle}>Today Tasks</Text>
+          <TouchableOpacity
+            style={styles.viewAllButton}
+            onPress={() => navigation.navigate('TaskList')}
+          >
+            <Text style={styles.viewAllButtonText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {todayTasks.slice(0, 3).map((task, i) => {
+          const time = moment(task.created_at).format('hh:mm A');
+          const [hourMin, ampm] = time.split(' ');
+
+          return (
+            <View key={i} style={{ marginTop: 16 }}>
+              {/* First Line → Time + Title */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={{ fontWeight: '600', color: '#000', fontSize: 14 }}
+                >
+                  {hourMin}
+                </Text>
+                <Text
+                  style={{
+                    fontWeight: '600',
+                    color: '#000',
+                    fontSize: 14,
+                    marginLeft: 20, // ✅ GAP between time & title
+                  }}
+                >
+                  {task.title}
+                </Text>
+              </View>
+
+              {/* Second Line → AM/PM + Location */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: 4,
+                }}
+              >
+                <Text
+                  style={{ fontWeight: 'bold', color: '#888', fontSize: 13 }}
+                >
+                  {ampm}
+                </Text>
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    color: '#888',
+                    fontSize: 13,
+                    marginLeft: 20, // ✅ GAP between am/pm & location
+                  }}
+                >
+                  {task.location}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* ✅ Today Events */}
+      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={styles.sectionTitle}>Today Events</Text>
+          <TouchableOpacity
+            style={styles.viewAllButton}
+            onPress={() => navigation.navigate('EventsList')}
+          >
+            <Text style={styles.viewAllButtonText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        {todayEvents.slice(0, 3).map((event, i) => {
+          const time = moment(event.date).format('hh:mm A');
+          const [hourMin, ampm] = time.split(' ');
+
+          return (
+            <View key={i} style={{ marginTop: 12, marginBottom: 12 }}>
+              {/* First Line → Time + Event Title */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={{ fontWeight: '600', fontSize: 14, color: '#000' }}
+                >
+                  {hourMin}
+                </Text>
+                <Text
+                  style={{
+                    fontWeight: '600',
+                    fontSize: 14,
+                    color: '#000',
+                    marginLeft: 20, // ✅ GAP between time & title
+                  }}
+                >
+                  {event.title}
+                </Text>
+              </View>
+
+              {/* Second Line → AM/PM + Event Location */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: 4,
+                }}
+              >
+                <Text
+                  style={{ fontWeight: 'bold', fontSize: 13, color: '#888' }}
+                >
+                  {ampm}
+                </Text>
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    fontSize: 13,
+                    color: '#888',
+                    marginLeft: 20, // ✅ GAP between am/pm & location
+                  }}
+                >
+                  {event.location || 'No Location'}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
   header: {
-    width: '100%',
     backgroundColor: '#FF7F2A',
-    paddingVertical: height * 0.05,
+    paddingTop: 50,
+    paddingBottom: 40,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
+    position: 'relative',
   },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  details: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  info: { marginLeft: 10 },
-  role: {
-    fontSize: 14,
+  menuButton: { position: 'absolute', top: 20, left: 20 },
+  headerContent: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 10 },
+  roleBadge: {
+    backgroundColor: '#FF9F70',
     color: '#000',
-    backgroundColor: '#ffeee6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginRight: 55,
     borderRadius: 8,
     fontWeight: 'bold',
     alignSelf: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 4,
   },
-  name: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 15 },
-  reminder: {
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: -height * 0.05,
-    padding: 15,
-    borderRadius: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 99,
-  },
-  reminderIcon: { marginRight: 15 },
-  reminderText: { fontSize: 18, fontWeight: '600', color: '#000' },
-  reminderSubText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: 'bold',
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
+  name: { fontSize: 20, fontWeight: 'bold', color: '#000' },
 
-  card: {
-    backgroundColor: '#ffeee6',
-    flex: 1,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
-    marginTop: -50,
-    paddingTop: 50,
+  birthdayWrapper: {
+    marginHorizontal: 10,
+    marginTop: -20,
     paddingHorizontal: 20,
-    alignItems: 'center',
   },
-  iconRow: {
+  birthdayCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF7F2A',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  birthdayTitle: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+  birthdayText: { fontSize: 14, color: '#555', fontWeight: 'bold' },
+  statusCard: {
+    backgroundColor: '#fff',
+    marginTop: 20,
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF7F2A',
+  },
+  rowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 30,
-    marginTop: 30,
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
-  iconBox: {
-    width: width * 0.42,
-    aspectRatio: 1,
-    backgroundColor: '#FFF0E6',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#FF7F2A',
-    justifyContent: 'center',
+
+  statusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    marginBottom: 6,
   },
-  icons: { marginBottom: 10 },
-  iconLabel: { fontSize: 16, fontWeight: '500', color: '#000' },
-  addButtonFilled: {
-    backgroundColor: '#FF7F2A',
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 30,
+
+  statusTitle: { fontSize: 14, fontWeight: 'bold', color: '#000' },
+
+  statusRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
   },
-  addButtonOutlined: {
-    borderWidth: 2,
-    borderColor: '#FF7F2A',
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 30,
+
+  statusLabel: {
+    flex: 1,
+    marginLeft: 13,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusCount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 20,
+    color: '#000',
+  },
+  status: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 20,
+    color: '#FF7F2A',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  addButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  addOutlinedText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+  viewAllButton: {
+    backgroundColor: '#fffaf3',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#888',
+  },
+
+  viewAllButtonText: {
+    color: '#888',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+
+  listRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  timeText: { width: 80, fontWeight: 'bold', color: '#000' },
+  itemText: { flex: 1, color: '#555', fontSize: 14, marginLeft: 20 },
 });
 
 export default DashboardScreen;

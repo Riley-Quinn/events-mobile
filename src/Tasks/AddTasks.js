@@ -38,10 +38,17 @@ const AddTasks = () => {
   const [statusId, setStatusId] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [estimatedDate, setEstimatedDate] = useState('');
+  const [StartedDate, setStartedDate] = useState('');
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+
   const [showSubCategoryModal, setShowSubCategoryModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isImportant, setIsImportant] = useState(false);
+
+  const [roles, setRoles] = useState([]);
+  const [roleId, setRoleId] = useState(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -51,7 +58,7 @@ const AddTasks = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const [userRes, categoryRes, statusRes] = await Promise.all([
+      const [userRes, categoryRes, statusRes, rolesRes] = await Promise.all([
         axios.get(`${BASE_URL}/api/auth/users`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -61,16 +68,21 @@ const AddTasks = () => {
         axios.get(`${BASE_URL}/api/tasks/status/all?type=task`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        axios.get(`${BASE_URL}/api/roles`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       setUsers(userRes.data);
       setCategories(categoryRes.data.list);
       setStatuses(statusRes.data.list);
+      setRoles(rolesRes.data || []);
     } catch (err) {
       console.error('Fetch error:', err);
       Alert.alert('Error', 'Failed to load data');
     }
   };
+
   useEffect(() => {
     const fetchSubcategories = async () => {
       if (!categoryId) return;
@@ -78,9 +90,7 @@ const AddTasks = () => {
         const token = await AsyncStorage.getItem('token');
         const res = await axios.get(
           `${BASE_URL}/api/sub-category/category/${categoryId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setSubCategories(res.data?.list || []);
       } catch (err) {
@@ -97,15 +107,13 @@ const AddTasks = () => {
     if (!title) newErrors.title = 'Title is required';
     if (!description) newErrors.description = 'Description is required';
     if (!location) newErrors.location = 'Location is required';
-    if (!assigneeId) newErrors.assigneeId = 'Assignee is required';
     if (!statusId) newErrors.statusId = 'Status is required';
     if (!estimatedDate) newErrors.estimatedDate = 'Estimated Date is required';
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
-    setErrors({});
 
     try {
       setSubmitting(true);
@@ -118,9 +126,11 @@ const AddTasks = () => {
         category_id: categoryId,
         assignee_id: assigneeId,
         sub_category_id: subCategoryId,
-        status_id: statusId || 1,
+        status_id: statusId,
+        start_date: StartedDate || null,
         estimated_date: estimatedDate || null,
         is_important: isImportant ? 1 : 0,
+        role_id: roleId,
       };
 
       const res = await axios.post(`${BASE_URL}/api/tasks`, taskData, {
@@ -154,6 +164,36 @@ const AddTasks = () => {
             <Text style={styles.heading}>Add Task</Text>
           </View>
         </View>
+
+        <Modal visible={showRoleModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowRoleModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalHeading}>Select Role</Text>
+              <FlatList
+                data={roles}
+                keyExtractor={item => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setRoleId(item.id);
+                      setShowRoleModal(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowCategoryModal(true)}
@@ -167,6 +207,7 @@ const AddTasks = () => {
         {errors.categoryId && (
           <Text style={styles.errorText}>{errors.categoryId}</Text>
         )}
+
         {categoryId && subCategories.length > 0 && (
           <>
             <TouchableOpacity
@@ -181,6 +222,7 @@ const AddTasks = () => {
                   : 'Select Subcategory'}
               </Text>
             </TouchableOpacity>
+
             <Modal
               visible={showSubCategoryModal}
               transparent
@@ -216,6 +258,7 @@ const AddTasks = () => {
             </Modal>
           </>
         )}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -226,6 +269,7 @@ const AddTasks = () => {
           />
         </View>
         {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+
         <View style={[styles.inputContainer, { height: 80 }]}>
           <TextInput
             style={[styles.input, { height: '100%' }]}
@@ -241,6 +285,7 @@ const AddTasks = () => {
         {errors.description && (
           <Text style={styles.errorText}>{errors.description}</Text>
         )}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -253,6 +298,7 @@ const AddTasks = () => {
         {errors.location && (
           <Text style={styles.errorText}>{errors.location}</Text>
         )}
+
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowAssigneeModal(true)}
@@ -263,74 +309,78 @@ const AddTasks = () => {
               : 'Select Assignee'}
           </Text>
         </TouchableOpacity>
-        {errors.assigneeId && (
-          <Text style={styles.errorText}>{errors.assigneeId}</Text>
-        )}
+
         <TouchableOpacity
           style={styles.inputContainer}
-          onPress={() => setShowStatusModal(true)}
+          onPress={() => setShowRoleModal(true)}
         >
           <Text style={styles.input}>
-            {statusId
-              ? statuses.find(s => s.status_id === statusId)?.status_name
-              : 'Select Status'}
+            {roleId ? roles.find(r => r.id === roleId)?.name : 'Select Role'}
           </Text>
         </TouchableOpacity>
-        {errors.statusId && (
-          <Text style={styles.errorText}>{errors.statusId}</Text>
-        )}
-        <TouchableOpacity
-          style={styles.inputContainer}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.input}>
-            {estimatedDate ? estimatedDate : 'Select Estimated Date'}
-          </Text>
-        </TouchableOpacity>
-
-        {errors.estimatedDate && (
-          <Text style={styles.errorText}>{errors.estimatedDate}</Text>
-        )}
-        {showDatePicker && (
-          <DateTimePicker
-            value={estimatedDate ? new Date(estimatedDate) : new Date()}
-            mode="date"
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) {
-                const formattedDate = selectedDate.toISOString().split('T')[0];
-                setEstimatedDate(formattedDate);
-              }
-            }}
-          />
-        )}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 15,
-            marginTop: 10,
-          }}
-        >
-          <Text style={{ fontSize: 16, color: '#000' }}>Important</Text>
-          <TouchableOpacity
-            onPress={() => setIsImportant(prev => !prev)}
-            style={{ marginLeft: 12 }}
-          >
-            <Icon
-              name={isImportant ? 'toggle' : 'toggle-outline'}
-              size={32}
-              color={isImportant ? '#ff6600' : '#aaa'}
-            />
-          </TouchableOpacity>
-        </View>
-
         <Modal
-          visible={showStatusModal}
+          visible={showAssigneeModal}
           transparent
           animationType="slide"
-          onRequestClose={() => setShowStatusModal(false)}
+          onRequestClose={() => setShowAssigneeModal(false)}
         >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowAssigneeModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalHeading}>Select Assignee</Text>
+              <FlatList
+                data={roleId ? users.filter(u => u.role_id === roleId) : users}
+                keyExtractor={item => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setAssigneeId(item.id);
+                      setShowAssigneeModal(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+        <Modal visible={showCategoryModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <TouchableOpacity
+                style={{ position: 'absolute', top: 10, right: 10 }}
+                onPress={() => setShowCategoryModal(false)}
+              >
+                <Icon name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalHeading}>Select Category</Text>
+              <FlatList
+                data={categories}
+                keyExtractor={item => item.category_id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setCategoryId(item.category_id);
+                      setShowCategoryModal(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 16 }}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={showStatusModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
               <TouchableOpacity
@@ -358,64 +408,89 @@ const AddTasks = () => {
             </View>
           </View>
         </Modal>
-        <Modal
-          visible={showAssigneeModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowAssigneeModal(false)}
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowStatusModal(true)}
         >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              justifyContent: 'center',
-              alignItems: 'center',
+          <Text style={styles.input}>
+            {statusId
+              ? statuses.find(s => s.status_id === statusId)?.status_name
+              : 'Select Status'}
+          </Text>
+        </TouchableOpacity>
+        {errors.statusId && (
+          <Text style={styles.errorText}>{errors.statusId}</Text>
+        )}
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.input}>
+            {estimatedDate ? estimatedDate : ' Estimated Date'}
+          </Text>
+        </TouchableOpacity>
+        {errors.estimatedDate && (
+          <Text style={styles.errorText}>{errors.estimatedDate}</Text>
+        )}
+        {showDatePicker && (
+          <DateTimePicker
+            value={estimatedDate ? new Date(estimatedDate) : new Date()}
+            mode="date"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                const formattedDate = selectedDate.toISOString().split('T')[0];
+                setEstimatedDate(formattedDate);
+              }
             }}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowStartDatePicker(true)}
+        >
+          <Text style={styles.input}>
+            {StartedDate ? StartedDate : ' Start Date'}
+          </Text>
+        </TouchableOpacity>
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={StartedDate ? new Date(StartedDate) : new Date()}
+            mode="date"
+            onChange={(event, selectedDate) => {
+              setShowStartDatePicker(false);
+              if (selectedDate) {
+                const formattedDate = selectedDate.toISOString().split('T')[0];
+                setStartedDate(formattedDate);
+              }
+            }}
+          />
+        )}
+
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 15,
+            marginTop: 10,
+          }}
+        >
+          <Text style={{ fontSize: 16, color: '#000' }}>Important</Text>
+          <TouchableOpacity
+            onPress={() => setIsImportant(prev => !prev)}
+            style={{ marginLeft: 12 }}
           >
-            <View
-              style={{
-                backgroundColor: '#fff',
-                padding: 20,
-                borderRadius: 20,
-                width: '85%',
-                maxHeight: '70%',
-              }}
-            >
-              <TouchableOpacity
-                style={{ position: 'absolute', top: 10, right: 10 }}
-                onPress={() => setShowAssigneeModal(false)}
-              >
-                <Icon name="close" size={24} color="#000" />
-              </TouchableOpacity>
+            <Icon
+              name={isImportant ? 'toggle' : 'toggle-outline'}
+              size={32}
+              color={isImportant ? '#ff6600' : '#aaa'}
+            />
+          </TouchableOpacity>
+        </View>
 
-              <Text
-                style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}
-              >
-                Select Assignee
-              </Text>
-
-              <FlatList
-                data={users}
-                keyExtractor={item => item.id.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={{
-                      paddingVertical: 12,
-                      borderBottomWidth: 1,
-                      borderColor: '#eee',
-                    }}
-                    onPress={() => {
-                      setAssigneeId(item.id);
-                      setShowAssigneeModal(false);
-                    }}
-                  >
-                    <Text style={{ fontSize: 16 }}>{item.name}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
-          </View>
-        </Modal>
         <TouchableOpacity
           style={styles.addButtonFilled}
           onPress={handleSubmit}
@@ -426,65 +501,6 @@ const AddTasks = () => {
           </Text>
         </TouchableOpacity>
       </View>
-
-      <Modal
-        visible={showCategoryModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: '#fff',
-              padding: 20,
-              borderRadius: 20,
-              width: '85%',
-              maxHeight: '70%',
-            }}
-          >
-            <TouchableOpacity
-              style={{ position: 'absolute', top: 10, right: 10 }}
-              onPress={() => setShowCategoryModal(false)}
-            >
-              <Icon name="close" size={24} color="#000" />
-            </TouchableOpacity>
-
-            <Text
-              style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}
-            >
-              Select Category
-            </Text>
-
-            <FlatList
-              data={categories}
-              keyExtractor={item => item.category_id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={{
-                    paddingVertical: 12,
-                    borderBottomWidth: 1,
-                    borderColor: '#eee',
-                  }}
-                  onPress={() => {
-                    setCategoryId(item.category_id);
-                    setShowCategoryModal(false);
-                  }}
-                >
-                  <Text style={{ fontSize: 16 }}>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };

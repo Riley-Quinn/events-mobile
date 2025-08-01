@@ -56,7 +56,6 @@ const EventList = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -64,21 +63,19 @@ const EventList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
+
         <Text style={styles.title}>My Events</Text>
-        {ability.add(
-          'add',
-          'Event',
-        )(
+
+        {ability.can('add', 'Event') && (
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('AddEvent')}
           >
             <Icon name="add-circle" size={30} color="#ff883a" />
-          </TouchableOpacity>,
+          </TouchableOpacity>
         )}
       </View>
 
-      {/* Event List */}
       <ScrollView contentContainerStyle={styles.taskList}>
         {events.length === 0 ? (
           <View style={styles.noEventsContainer}>
@@ -94,34 +91,25 @@ const EventList = () => {
             >
               <View style={styles.cardHeader}>
                 <Text
-                  style={[
-                    styles.taskTitle,
-                    {
-                      maxWidth: '75%',
-                    },
-                  ]}
+                  style={[styles.taskTitle, { maxWidth: '75%' }]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {event.title}
                 </Text>
+
                 <View style={styles.actionIcons}>
-                  {ability.can(
-                    'add',
-                    'Event',
-                  )(
+                  {ability.can('add', 'Event') && (
                     <TouchableOpacity
                       onPress={() =>
                         navigation.navigate('EditEvent', { eventId: event.id })
                       }
                     >
                       <Icon name="create-outline" size={22} color="#1976d2" />
-                    </TouchableOpacity>,
+                    </TouchableOpacity>
                   )}
-                  {ability.can(
-                    'add',
-                    'Event',
-                  )(
+
+                  {ability.can('add', 'Event') && (
                     <TouchableOpacity
                       onPress={() =>
                         Alert.alert('Delete Event', 'Are you sure?', [
@@ -136,7 +124,7 @@ const EventList = () => {
                       style={{ marginLeft: 12 }}
                     >
                       <Icon name="trash-outline" size={22} color="#ff3b30" />
-                    </TouchableOpacity>,
+                    </TouchableOpacity>
                   )}
                 </View>
               </View>
@@ -196,7 +184,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff883a',
     paddingTop: 50,
   },
-
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -208,7 +195,6 @@ const styles = StyleSheet.create({
     padding: 5,
     marginRight: 10,
   },
-
   title: {
     fontSize: 26,
     fontWeight: 'bold',
@@ -219,7 +205,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
   },
-
   taskList: {
     paddingHorizontal: 16,
     paddingBottom: 100,
@@ -259,9 +244,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 300, // optional: shift down slightly below header
+    paddingTop: 300,
   },
-
   noEventsText: {
     fontSize: 20,
     color: '#000',

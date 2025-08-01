@@ -1,12 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useCallback } from 'react';
+import { Linking } from 'react-native';
+
 import {
   View,
   Text,
   Image,
   TouchableOpacity,
   Alert,
+  ScrollView,
   StyleSheet,
   Modal,
   ActivityIndicator,
@@ -21,6 +24,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
 import CommentBox from '../comments/Comments';
 import { useFocusEffect } from '@react-navigation/native';
+import moment from 'moment';
 
 const ViewPressRelease = ({ route, navigation }) => {
   const { id } = route.params;
@@ -30,18 +34,16 @@ const ViewPressRelease = ({ route, navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [PressReleaseList, setPressReleaseList] = useState([]);
   const fetchPressRelease = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      console.log('📡 Fetching press release details...');
       const res = await axios.get(`${BASE_URL}/api/press-release/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('✅ Press Release Data:', res.data);
       setPress(res.data);
     } catch (err) {
-      console.log('❌ Failed to load Press Release:', err);
       Alert.alert('Error', 'Failed to load Press Release Note');
     }
   };
@@ -49,14 +51,11 @@ const ViewPressRelease = ({ route, navigation }) => {
   const fetchMedia = async () => {
     const token = await AsyncStorage.getItem('token');
     try {
-      console.log('📡 Fetching media for press ID:', id);
       const res = await axios.get(`${BASE_URL}/api/press-media/press/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('✅ Media API Response:', res.data);
       setMedia(res.data);
     } catch (err) {
-      console.log('❌ Failed to fetch media:', err);
       Alert.alert('Error', 'Failed to load media');
     }
   };
@@ -67,23 +66,38 @@ const ViewPressRelease = ({ route, navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('🔄 Screen Focused - Fetching Media Again...');
       fetchMedia();
     }, [id]),
   );
 
   const selectFile = () => {
+    if (media.length >= 4) {
+      Alert.alert(
+        'Limit Reached',
+        'You can upload only 4 files per press release.',
+      );
+      return;
+    }
+
     launchImageLibrary({ mediaType: 'mixed', selectionLimit: 1 }, response => {
       if (response.didCancel) return;
       const asset = response.assets?.[0];
       if (!asset) return Alert.alert('Error', 'No file selected');
-      console.log('📂 File Selected:', asset);
       setSelectedFile(asset);
     });
   };
 
   const uploadFile = async () => {
     if (!selectedFile) return Alert.alert('No file selected');
+
+    if (media.length >= 4) {
+      Alert.alert(
+        'Limit Reached',
+        'You can upload only 4 files per press release.',
+      );
+      return;
+    }
+
     const token = await AsyncStorage.getItem('token');
     const formData = new FormData();
     formData.append('file', {
@@ -98,18 +112,15 @@ const ViewPressRelease = ({ route, navigation }) => {
 
     try {
       setUploading(true);
-      console.log('⬆️ Uploading file...');
       await axios.post(`${BASE_URL}/api/press-media/upload/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('✅ Upload Success!');
       setSelectedFile(null);
-      await fetchMedia(); // ✅ Refresh media after upload
+      await fetchMedia();
     } catch (err) {
-      console.log('❌ Upload Error:', err);
       Alert.alert('Upload Failed', 'Something went wrong');
     } finally {
       setUploading(false);
@@ -125,13 +136,11 @@ const ViewPressRelease = ({ route, navigation }) => {
         style: 'destructive',
         onPress: async () => {
           try {
-            console.log('🗑 Deleting media:', mediaId);
             await axios.delete(`${BASE_URL}/api/press-media/${mediaId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             fetchMedia();
           } catch (err) {
-            console.log('❌ Delete Error:', err);
             Alert.alert('Error', 'Delete failed');
           }
         },
@@ -173,6 +182,28 @@ const ViewPressRelease = ({ route, navigation }) => {
       </View>
     );
   };
+  const sharePressRelease = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.get(`${BASE_URL}/api/press-release/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('✅ API Response:', res.data);
+
+      if (!res.data) {
+        Alert.alert('No Press Release to share');
+        return;
+      }
+
+      setPressReleaseList([res.data]);
+
+      setTimeout(() => {
+        setShareModalVisible(true);
+      }, 100);
+    } catch (error) {
+      Alert.alert('Error', error?.message || 'Failed to fetch Press Release');
+    }
+  };
 
   if (!press)
     return <ActivityIndicator style={{ marginTop: 100 }} size="large" />;
@@ -184,13 +215,19 @@ const ViewPressRelease = ({ route, navigation }) => {
       ListHeaderComponent={
         <View style={{ backgroundColor: '#ffeee6', flex: 1 }}>
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Icon name="chevron-back-sharp" color="#000" size={30} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Icon name="chevron-back-sharp" color="#000" size={30} />
+              </TouchableOpacity>
+
+              <Text style={styles.heading} numberOfLines={1}>
+                {press.title}
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={sharePressRelease}>
+              <Icon name="share-social" size={28} color="#000" />
             </TouchableOpacity>
-            <Text style={styles.heading}>{press.title}</Text>
           </View>
 
           <View style={styles.container}>
@@ -269,7 +306,141 @@ const ViewPressRelease = ({ route, navigation }) => {
               </View>
             </View>
           </Modal>
+          <Modal
+            visible={shareModalVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShareModalVisible(false)}
+          >
+            <View style={styles.shareModalContainer}>
+              <View style={styles.shareModalBox}>
+                <Text style={styles.shareTitle}>Share Events</Text>
 
+                <ScrollView style={{ maxHeight: 300 }}>
+                  {PressReleaseList.map((e, i) => {
+                    console.log('🔹 Rendering Press Release in Modal:', e);
+                    return (
+                      <Text key={i} style={styles.pressItem}>
+                        {i + 1}. {e.title} -{' '}
+                        {moment(e.created_at).format('DD MMM YYYY')}
+                      </Text>
+                    );
+                  })}
+                </ScrollView>
+                <View style={styles.iconRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const msg = `Title: ${press.title}
+Notes: ${press.notes}`;
+                      const url = `whatsapp://send?text=${encodeURIComponent(
+                        msg,
+                      )}`;
+
+                      Linking.canOpenURL(url)
+                        .then(supported => {
+                          if (supported) {
+                            Linking.openURL(url);
+                          } else {
+                            Linking.openURL(
+                              `https://wa.me/?text=${encodeURIComponent(msg)}`,
+                            );
+                          }
+                        })
+                        .catch(() =>
+                          Alert.alert('Error', 'Unable to open WhatsApp'),
+                        );
+                    }}
+                  >
+                    <Icon name="logo-whatsapp" size={30} color="#25D366" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const msg = `Title: ${press.title}\nNotes: ${press.notes}`;
+                      const appUrl = `twitter://post?message=${encodeURIComponent(
+                        msg,
+                      )}`;
+                      const webUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                        msg,
+                      )}`;
+
+                      Linking.canOpenURL(appUrl)
+                        .then(supported => {
+                          if (supported) {
+                            Linking.openURL(appUrl);
+                          } else {
+                            Linking.openURL(webUrl);
+                          }
+                        })
+                        .catch(() =>
+                          Alert.alert('Error', 'Unable to open Twitter'),
+                        );
+                    }}
+                  >
+                    <Icon name="logo-twitter" size={30} color="#1DA1F2" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const subject = `Press Release: ${press.title}`;
+                      const body = `Title: ${press.title}\nNotes: ${press.notes}`;
+
+                      const gmailUrl = `googlegmail:///co?subject=${encodeURIComponent(
+                        subject,
+                      )}&body=${encodeURIComponent(body)}`;
+
+                      Linking.canOpenURL(gmailUrl)
+                        .then(supported => {
+                          if (supported) {
+                            Linking.openURL(gmailUrl);
+                          } else {
+                            const mailUrl = `mailto:?subject=${encodeURIComponent(
+                              subject,
+                            )}&body=${encodeURIComponent(body)}`;
+                            Linking.openURL(mailUrl);
+                          }
+                        })
+                        .catch(() =>
+                          Alert.alert('Error', 'Unable to open Gmail'),
+                        );
+                    }}
+                  >
+                    <Icon name="mail-outline" size={30} color="#FF5722" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const msg = `Title: ${press.title}
+Notes: ${press.notes}`;
+
+                      const appUrl = `tg://msg?text=${encodeURIComponent(msg)}`;
+                      const webUrl = `https://t.me/share/url?text=${encodeURIComponent(
+                        msg,
+                      )}`;
+
+                      Linking.canOpenURL(appUrl)
+                        .then(supported => {
+                          if (supported) {
+                            Linking.openURL(appUrl);
+                          } else {
+                            Linking.openURL(webUrl);
+                          }
+                        })
+                        .catch(() =>
+                          Alert.alert('Error', 'Unable to open Telegram'),
+                        );
+                    }}
+                  >
+                    <Icon
+                      name="paper-plane-outline"
+                      size={30}
+                      color="#0088cc"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
           <View style={styles.CommentBox}>
             <CommentBox module={'press_release'} moduleId={id} />
           </View>
@@ -281,6 +452,7 @@ const ViewPressRelease = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   container: { padding: 20 },
+
   label: { fontWeight: 'bold', fontSize: 18, color: '#000' },
   value: { fontSize: 18, color: '#000' },
   card: { padding: 15, backgroundColor: '#fff', borderRadius: 10 },
@@ -298,6 +470,51 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between', // Keeps social icon at the end
+    paddingHorizontal: 20,
+    backgroundColor: '#ff883a',
+    paddingTop: 40,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+  },
+
+  heading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    marginLeft: 5, // small gap from back icon
+    maxWidth: 200, // prevent pushing icon out
+  },
+
+  shareModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+
+  shareModalBox: {
+    width: '90%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+  },
+
+  pressItem: {
+    fontSize: 16,
+    color: '#000',
+    marginBottom: 8,
+  },
+
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 15,
+  },
   modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.9)',
@@ -314,17 +531,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#ff883a',
-    paddingTop: 40,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 50,
-  },
-  heading: { fontSize: 22, fontWeight: 'bold', color: '#000', marginLeft: 10 },
+
   CommentBox: { margin: 20, padding: 20, backgroundColor: '#fff' },
 });
 

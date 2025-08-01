@@ -30,11 +30,9 @@ const PressReleaseList = () => {
   const fetchPressRelease = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-
       const res = await axios.get(`${BASE_URL}/api/press-release/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setPressRelease(res.data);
     } catch (err) {
       console.error(err);
@@ -45,11 +43,9 @@ const PressReleaseList = () => {
   const handleDelete = async press_id => {
     try {
       const token = await AsyncStorage.getItem('token');
-
       await axios.delete(`${BASE_URL}/api/press-release/${press_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       fetchPressRelease();
       Alert.alert('Deleted', 'Press Release deleted successfully');
     } catch (err) {
@@ -80,16 +76,14 @@ const PressReleaseList = () => {
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>My Press Release</Text>
-        {ability.can(
-          'add',
-          'Event',
-        )(
+
+        {ability.can('add', 'Event') && (
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('AddPressRelease')}
           >
             <Icon name="add-circle" size={30} color="#ff883a" />
-          </TouchableOpacity>,
+          </TouchableOpacity>
         )}
       </View>
 
@@ -107,10 +101,7 @@ const PressReleaseList = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.taskTitle}>{pressrelease.title}</Text>
               <View style={styles.actionIcons}>
-                {ability.can(
-                  'add',
-                  'Event',
-                )(
+                {ability.can('add', 'Event') && (
                   <TouchableOpacity
                     onPress={() =>
                       navigation.navigate('EditPressRelease', {
@@ -119,12 +110,10 @@ const PressReleaseList = () => {
                     }
                   >
                     <Icon name="create-outline" size={22} color="#1976d2" />
-                  </TouchableOpacity>,
+                  </TouchableOpacity>
                 )}
-                {ability.can(
-                  'add',
-                  'Event',
-                )(
+
+                {ability.can('add', 'Event') && (
                   <TouchableOpacity
                     onPress={() =>
                       Alert.alert(
@@ -143,7 +132,7 @@ const PressReleaseList = () => {
                     style={{ marginLeft: 12 }}
                   >
                     <Icon name="trash-outline" size={22} color="#ff3b30" />
-                  </TouchableOpacity>,
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -187,11 +176,7 @@ const PressReleaseList = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ff883a',
-    paddingTop: 50,
-  },
+  container: { flex: 1, backgroundColor: '#ff883a', paddingTop: 50 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -199,26 +184,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 10,
   },
-
-  backButton: {
-    padding: 5,
-    marginRight: 10,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  addButton: {
-    backgroundColor: '#ffeee6',
-    padding: 10,
-    borderRadius: 50,
-  },
-  taskList: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
+  backButton: { padding: 5, marginRight: 10 },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#000' },
+  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
+  taskList: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {
     backgroundColor: '#ffeee6',
     borderRadius: 20,
@@ -232,30 +201,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  taskTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  actionIcons: {
-    flexDirection: 'row',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  label: {
-    fontSize: 15,
-    color: '#000',
-    marginLeft: 8,
-  },
-  status: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginTop: 5,
-    marginLeft: 8,
-  },
+  taskTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
+  actionIcons: { flexDirection: 'row' },
+  row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  label: { fontSize: 15, color: '#000', marginLeft: 8 },
+  status: { fontSize: 15, fontWeight: 'bold', marginTop: 5, marginLeft: 8 },
 });
 
 export default PressReleaseList;

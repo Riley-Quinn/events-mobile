@@ -12,6 +12,8 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  TextInput,
+  FlatList,
 } from 'react-native';
 import Video from 'react-native-video';
 import axios from 'axios';
@@ -20,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { Dropdown } from 'react-native-element-dropdown';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width, height } = Dimensions.get('window');
 const numColumns = 3;
@@ -31,7 +33,14 @@ const Gallery = () => {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const [searchText, setSearchText] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const navigation = useNavigation();
 
@@ -40,11 +49,8 @@ const Gallery = () => {
   const groupByDate = mediaList => {
     return mediaList.reduce((acc, item) => {
       const section = acc.find(s => s.title === item.date);
-      if (section) {
-        section.data.push(item);
-      } else {
-        acc.push({ title: item.date, data: [item] });
-      }
+      if (section) section.data.push(item);
+      else acc.push({ title: item.date, data: [item] });
       return acc;
     }, []);
   };
@@ -66,17 +72,12 @@ const Gallery = () => {
 
       setFlatMedia(formatted);
     } catch (err) {
-      console.error('Error fetching event media', err);
       Alert.alert('Error', 'Failed to fetch media for selected event');
-      setFlatMedia([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchAllMedia();
-  }, []);
   const fetchAllMedia = async () => {
     try {
       setLoading(true);
@@ -94,77 +95,12 @@ const Gallery = () => {
 
       setFlatMedia(formatted);
     } catch (err) {
-      console.error('Error fetching all media', err);
       Alert.alert('Error', 'Failed to fetch all media');
-      setFlatMedia([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredMedia = flatMedia.filter(item => item.uri.toLowerCase());
-  const filteredGroupedMedia = groupByDate(filteredMedia);
-
-  const openViewer = item => {
-    const index = flatMedia.findIndex(i => i.uri === item.uri);
-    setSelectedIndex(index);
-  };
-
-  const closeViewer = () => {
-    setSelectedIndex(null);
-  };
-
-  const renderMediaItem = ({ item }) => (
-    <TouchableOpacity onPress={() => openViewer(item)}>
-      {item.type === 'image' ? (
-        <Image source={{ uri: item.uri }} style={styles.image} />
-      ) : (
-        <View style={styles.videoThumbnail}>
-          <Video
-            source={{ uri: item.uri }}
-            paused
-            resizeMode="cover"
-            style={styles.image}
-          />
-          <View style={styles.playOverlay}>
-            <Text style={styles.playText}>▶</Text>
-          </View>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-
-  const renderSection = ({ section }) => (
-    <View style={{ marginBottom: 20 }}>
-      <Text style={styles.date}>{section.title}</Text>
-      <View style={styles.grid}>
-        {section.data.map((item, index) => (
-          <View key={index} style={{ width: imageSize }}>
-            {renderMediaItem({ item })}
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderViewerItem = ({ item }) => (
-    <View style={styles.viewerItem}>
-      {item.type === 'image' ? (
-        <Image
-          source={{ uri: item.uri }}
-          style={styles.fullMedia}
-          resizeMode="contain"
-        />
-      ) : (
-        <Video
-          source={{ uri: item.uri }}
-          controls
-          resizeMode="contain"
-          style={styles.fullMedia}
-        />
-      )}
-    </View>
-  );
   const fetchEvents = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -177,10 +113,10 @@ const Gallery = () => {
         value: event.id,
       }));
 
-      // Add "All" option at the top
-      setEvents([{ label: 'All', value: 'all' }, ...formatted]);
+      const allEvents = [{ label: 'All', value: 'all' }, ...formatted];
+      setEvents(allEvents);
+      setFilteredEvents(allEvents);
     } catch (err) {
-      console.error(err);
       Alert.alert('Error', 'Failed to fetch events');
     } finally {
       setLoading(false);
@@ -188,8 +124,35 @@ const Gallery = () => {
   };
 
   useEffect(() => {
+    fetchAllMedia();
     fetchEvents();
   }, []);
+
+  const handleSearchChange = text => {
+    setSearchText(text);
+    setShowDropdown(true);
+
+    const filtered = events.filter(e =>
+      e.label.toLowerCase().includes(text.toLowerCase()),
+    );
+    setFilteredEvents(filtered);
+  };
+
+  const selectEvent = item => {
+    setSelectedEvent(item.value);
+    setSearchText(item.label);
+    setShowDropdown(false);
+
+    if (item.value === 'all') fetchAllMedia();
+    else fetchMediaByEvent(item.value);
+  };
+
+  const filteredMedia = flatMedia.filter(item => {
+    if (!selectedDate) return true;
+    return moment(item.created_at).isSame(selectedDate, 'day');
+  });
+
+  const filteredGroupedMedia = groupByDate(filteredMedia);
 
   if (loading) {
     return (
@@ -198,9 +161,9 @@ const Gallery = () => {
       </View>
     );
   }
+
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.details}>
           <TouchableOpacity
@@ -212,71 +175,109 @@ const Gallery = () => {
           <Text style={styles.heading}>Gallery</Text>
         </View>
       </View>
-      <View style={styles.container1}>
-        <Dropdown
-          style={styles.dropdown}
-          data={events}
-          labelField="label"
-          valueField="value"
-          placeholder="Choose an event"
-          value={selectedEvent}
-          onChange={item => {
-            setSelectedEvent(item.value);
-            if (item.value === 'all') {
-              fetchAllMedia();
-            } else {
-              fetchMediaByEvent(item.value);
-            }
-          }}
-          containerStyle={styles.dropdownContainer}
-          selectedTextStyle={styles.selectedText}
-          itemTextStyle={styles.itemText}
-          placeholderStyle={styles.placeholderText}
+
+      <View style={styles.searchContainer}>
+        <Icon name="search" size={20} color="#888" style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search  event..."
+          placeholderTextColor="#aaa"
+          value={searchText}
+          onChangeText={handleSearchChange}
         />
+        <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)}>
+          <Icon name="chevron-down" size={22} color="#FF6600" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+          <Icon
+            name="calendar"
+            size={22}
+            color="#FF6600"
+            style={{ marginLeft: 10 }}
+          />
+        </TouchableOpacity>
       </View>
-      {/* Gallery */}
-      {loading ? (
-        <ActivityIndicator size="large" color="#f97316" />
-      ) : (
-        <SectionList
-          sections={filteredGroupedMedia}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={() => null}
-          renderSectionHeader={renderSection}
+
+      {showDropdown && filteredEvents.length > 0 && (
+        <FlatList
+          data={filteredEvents}
+          keyExtractor={(item, index) => index.toString()}
+          style={styles.suggestionBox}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.suggestionItem}
+              onPress={() => selectEvent(item)}
+            >
+              <Text style={styles.suggestionText}>{item.label}</Text>
+            </TouchableOpacity>
+          )}
         />
       )}
 
-      {/* Viewer */}
-      <Modal visible={selectedIndex !== null} transparent={false}>
-        <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.modalClose} onPress={closeViewer}>
-            <Text style={styles.closeText}>✕</Text>
-          </TouchableOpacity>
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (date) setSelectedDate(date);
+          }}
+        />
+      )}
 
-          <SectionList
-            sections={[{ title: '', data: flatMedia }]}
-            horizontal
-            pagingEnabled
-            initialScrollIndex={selectedIndex}
-            renderItem={renderViewerItem}
-            keyExtractor={(_, index) => index.toString()}
-            getItemLayout={(_, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-          />
-        </View>
-      </Modal>
+      {filteredGroupedMedia.length === 0 && (
+        <Text
+          style={{
+            textAlign: 'center',
+            marginTop: 20,
+            fontSize: 16,
+            color: '#555',
+          }}
+        >
+          No events on this date
+        </Text>
+      )}
+
+      <SectionList
+        sections={filteredGroupedMedia}
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={() => null}
+        renderSectionHeader={({ section }) => (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={styles.date}>{section.title}</Text>
+            <View style={styles.grid}>
+              {section.data.map((item, index) => (
+                <View key={index} style={{ width: imageSize }}>
+                  <TouchableOpacity onPress={() => setSelectedIndex(index)}>
+                    {item.type === 'image' ? (
+                      <Image source={{ uri: item.uri }} style={styles.image} />
+                    ) : (
+                      <View style={styles.videoThumbnail}>
+                        <Video
+                          source={{ uri: item.uri }}
+                          paused
+                          resizeMode="cover"
+                          style={styles.image}
+                        />
+                        <View style={styles.playOverlay}>
+                          <Text style={styles.playText}>▶</Text>
+                        </View>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffeee6',
-  },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
   header: {
     width: '100%',
     paddingHorizontal: 20,
@@ -285,17 +286,16 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
   },
-  details: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  heading: {
-    fontSize: 26,
+  date: {
+    fontSize: 18,
+    color: '#000',
     fontWeight: 'bold',
     marginTop: 8,
     marginLeft: 20,
-    color: '#000',
   },
+
+  details: { flexDirection: 'row', alignItems: 'center' },
+  heading: { fontSize: 26, fontWeight: 'bold', marginLeft: 20, color: '#000' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -306,32 +306,24 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     elevation: 2,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 5,
-  },
-  image: {
-    width: imageSize,
-    height: imageSize,
-    margin: 5,
+  searchInput: { flex: 1, fontSize: 16, color: '#000' },
+  suggestionBox: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: 2,
     borderRadius: 8,
+    elevation: 3,
+    maxHeight: 200,
   },
-  videoThumbnail: {
-    position: 'relative',
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  date: {
-    fontSize: 18,
-    color: '#000',
-    fontWeight: 'bold',
-    marginTop: 8,
-    marginLeft: 20,
-  },
+  suggestionText: { fontSize: 15, color: '#000' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 5 },
+  image: { width: imageSize, height: imageSize, margin: 5, borderRadius: 8 },
+  videoThumbnail: { position: 'relative' },
   playOverlay: {
     position: 'absolute',
     top: '35%',
@@ -340,73 +332,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 30,
   },
-  playText: {
-    fontSize: 24,
-    color: '#fff',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  modalClose: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 1,
-  },
-  closeText: {
-    fontSize: 28,
-    color: '#fff',
-  },
-  viewerItem: {
-    width,
-    height,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullMedia: {
-    width,
-    height: '100%',
-  },
-  container1: {
-    margin: 16,
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#333',
-    fontWeight: '500',
-  },
-  dropdown: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-  },
-  dropdownContainer: {
-    borderRadius: 8,
-    elevation: 4,
-    backgroundColor: '#fff',
-  },
-  selectedText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: '#999',
-  },
-  itemText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  playText: { fontSize: 24, color: '#fff' },
 });
 
 export default Gallery;
