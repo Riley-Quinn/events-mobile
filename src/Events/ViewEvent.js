@@ -59,7 +59,7 @@ const ViewEvent = ({ route, navigation }) => {
 
   const selectFile = async () => {
     if (media.length >= 4) {
-      Alert.alert('Limit Reached', 'You can only upload 4 images/videos.');
+      Alert.alert('Limit Reached', 'You can only upload 4 images.');
       return;
     }
 

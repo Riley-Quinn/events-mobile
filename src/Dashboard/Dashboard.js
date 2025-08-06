@@ -15,6 +15,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { BASE_URL } from '@env';
 import moment from 'moment';
+import PushNotification from 'react-native-push-notification';
+import messaging from '@react-native-firebase/messaging'; // make sure this is imported
+import { Alert } from 'react-native'; // already imported
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +30,24 @@ const DashboardScreen = () => {
   const [birthdayNames, setBirthdayNames] = useState([]);
   const [taskStatusCounts, setTaskStatusCounts] = useState({});
   const [pressReleaseCounts, setPressReleaseCounts] = useState({});
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('🔔 Foreground FCM:', remoteMessage);
+
+      PushNotification.localNotification({
+        channelId: 'default-channel-id', // Make sure this matches your created channel
+        title: remoteMessage.notification?.title || 'Notification',
+        message: remoteMessage.notification?.body || 'You have a message',
+        bigText: remoteMessage.notification?.body || '',
+        playSound: true,
+        soundName: 'default',
+        importance: 'high',
+        vibrate: true,
+      });
+    });
+
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -196,25 +217,26 @@ const DashboardScreen = () => {
       </View>
 
       {/* BIRTHDAY CARD */}
-      <View style={styles.birthdayWrapper}>
-        <View style={styles.birthdayCard}>
-          <Image
-            source={require('../../assets/confetti.png')} // ✅ your birthday image
-            style={{ width: 35, height: 35 }} // ✅ same size as icon
-            resizeMode="contain"
-          />
+      <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
+        <View style={styles.birthdayWrapper}>
+          <View style={styles.birthdayCard}>
+            <Image
+              source={require('../../assets/confetti.png')} // ✅ your birthday image
+              style={{ width: 35, height: 35 }} // ✅ same size as icon
+              resizeMode="contain"
+            />
 
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.birthdayTitle}>Happy Birthday</Text>
-            <Text style={[styles.birthdayText, { marginTop: 6 }]}>
-              {birthdayNames.length > 0
-                ? birthdayNames.join(', ')
-                : 'No Birthdays Today'}
-            </Text>
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.birthdayTitle}>Happy Birthday</Text>
+              <Text style={[styles.birthdayText, { marginTop: 6 }]}>
+                {birthdayNames.length > 0
+                  ? birthdayNames.join(', ')
+                  : 'No Birthdays Today'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
-
+      </TouchableOpacity>
       <View
         style={{
           flexDirection: 'row',

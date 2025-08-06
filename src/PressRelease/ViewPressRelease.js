@@ -19,6 +19,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Video from 'react-native-video';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
@@ -188,7 +190,6 @@ const ViewPressRelease = ({ route, navigation }) => {
       const res = await axios.get(`${BASE_URL}/api/press-release/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('✅ API Response:', res.data);
 
       if (!res.data) {
         Alert.alert('No Press Release to share');
@@ -318,7 +319,6 @@ const ViewPressRelease = ({ route, navigation }) => {
 
                 <ScrollView style={{ maxHeight: 300 }}>
                   {PressReleaseList.map((e, i) => {
-                    console.log('🔹 Rendering Press Release in Modal:', e);
                     return (
                       <Text key={i} style={styles.pressItem}>
                         {i + 1}. {e.title} -{' '}
@@ -431,11 +431,7 @@ Notes: ${press.notes}`;
                         );
                     }}
                   >
-                    <Icon
-                      name="paper-plane-outline"
-                      size={30}
-                      color="#0088cc"
-                    />
+                    <MaterialIcons name="telegram" size={30} color="#0088cc" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -473,7 +469,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Keeps social icon at the end
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     backgroundColor: '#ff883a',
     paddingTop: 40,

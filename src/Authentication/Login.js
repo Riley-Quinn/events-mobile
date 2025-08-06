@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,12 @@ import { updateAbility } from '../casl/ability';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { BASE_URL } from '@env';
+import {
+  handleFcmToken,
+  getFcmToken,
+  requestNotificationPermission,
+} from '../Authentication/fcm';
+
 const API_URL = `${BASE_URL}/api/auth/login`;
 
 const LoginSchema = Yup.object().shape({
@@ -29,6 +35,7 @@ const LoginSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+  const [isListenerAttached, setIsListenerAttached] = useState(false); // ✅ FCM flag
 
   const handleLogin = async (values, { setSubmitting }) => {
     try {
@@ -45,6 +52,22 @@ const LoginScreen = () => {
       await AsyncStorage.setItem('roleId', String(user.role_id));
       await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
       updateAbility(permissions);
+
+      // ✅ FCM token registration
+      // ✅ Ask push notification permission (Android 13+)
+      const hasPermission = await requestNotificationPermission();
+
+      if (hasPermission) {
+        // ✅ Register and store FCM token
+        await handleFcmToken(
+          user.id,
+          getFcmToken,
+          isListenerAttached,
+          setIsListenerAttached,
+        );
+      } else {
+        console.warn('🔕 Notification permission not granted');
+      }
 
       navigation.reset({
         index: 0,

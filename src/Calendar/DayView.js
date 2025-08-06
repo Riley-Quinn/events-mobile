@@ -270,7 +270,7 @@ const DayView = () => {
       .filter(task => moment(task.date).format('YYYY-MM-DD') === selectedDate)
       .map(task => ({
         ...task,
-        category: 'tasks', // ✅ Force tasks category
+        category: 'tasks',
       }));
     const importantDays = filterByDate(data.importantDays, 'importantDay_date');
 

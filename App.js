@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,10 +23,73 @@ import Gallery from './src/Gallery/Gallery';
 import ViewPressRelease from './src/PressRelease/ViewPressRelease';
 import EditPressRelease from './src/PressRelease/EditPressRelease';
 import EditTask from './src/Tasks/EditTask';
+import PushNotification from 'react-native-push-notification';
+
+import messaging from '@react-native-firebase/messaging';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
+// 🔴 Background FCM handler (outside component)
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  console.log('📩 Background FCM:', remoteMessage);
+});
+
 export default function App() {
+  useEffect(() => {
+    const requestPermission = async () => {
+      if (Platform.OS === 'android' && Platform.Version >= 33) {
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+        );
+      }
+      await messaging().requestPermission();
+    };
+
+    requestPermission();
+
+    // 👇 Create channel only once
+    PushNotification.createChannel(
+      {
+        channelId: 'default-channel-id',
+        channelName: 'Default Channel',
+        importance: 4,
+        vibrate: true,
+      },
+      created =>
+        console.log(`🛠️ Channel '${created ? 'created' : 'already exists'}'`),
+    );
+
+    // ✅ Foreground FCM messages → trigger local notification
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('🔔 Foreground FCM:', remoteMessage);
+      PushNotification.localNotification({
+        channelId: 'default-channel-id',
+        title: remoteMessage.notification?.title || 'Notification',
+        message: remoteMessage.notification?.body || 'You have a new message',
+      });
+    });
+
+    const unsubscribeOpened = messaging().onNotificationOpenedApp(
+      remoteMessage => {
+        console.log('➡️ Opened from background:', remoteMessage);
+      },
+    );
+
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage) {
+          console.log('🚀 Opened from quit state:', remoteMessage);
+        }
+      });
+
+    return () => {
+      unsubscribe();
+      unsubscribeOpened();
+    };
+  }, []);
+
   return (
     <SafeAreaProvider>
       <NavigationContainer>
