@@ -24,6 +24,7 @@ import ViewPressRelease from './src/PressRelease/ViewPressRelease';
 import EditPressRelease from './src/PressRelease/EditPressRelease';
 import EditTask from './src/Tasks/EditTask';
 import PushNotification from 'react-native-push-notification';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import messaging from '@react-native-firebase/messaging';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
@@ -92,31 +93,42 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
-          <Stack.Screen name="AddEvents" component={AddEvents} />
-          <Stack.Screen name="CalendarScreen" component={CalendarScreen} />
-          <Stack.Screen name="DayView" component={DayView} />
-          <Stack.Screen name="WeekView" component={WeekView} />
-          <Stack.Screen name="MonthView" component={MonthView} />
-          <Stack.Screen name="AddTasks" component={AddTasks} />
-          <Stack.Screen name="TaskList" component={TaskList} />
-          <Stack.Screen name="PressReleaseList" component={PressReleaseList} />
-          <Stack.Screen name="AddPressRelease" component={AddPressRelease} />
-          <Stack.Screen name="Profile" component={Profile} />
-          <Stack.Screen name="AddEvent" component={AddEvents} />
-          <Stack.Screen name="EventsList" component={EventList} />
-          <Stack.Screen name="ViewEvent" component={ViewEvent} />
-          <Stack.Screen name="EditEvent" component={EditEvent} />
-          <Stack.Screen name="ViewTask" component={ViewTask} />
-          <Stack.Screen name="Gallery" component={Gallery} />
-          <Stack.Screen name="ViewPressRelease" component={ViewPressRelease} />
-          <Stack.Screen name="EditPressRelease" component={EditPressRelease} />
-          <Stack.Screen name="EditTask" component={EditTask} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <GestureHandlerRootView>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
+            <Stack.Screen name="AddEvents" component={AddEvents} />
+            <Stack.Screen name="CalendarScreen" component={CalendarScreen} />
+            <Stack.Screen name="DayView" component={DayView} />
+            <Stack.Screen name="WeekView" component={WeekView} />
+            <Stack.Screen name="MonthView" component={MonthView} />
+            <Stack.Screen name="AddTasks" component={AddTasks} />
+            <Stack.Screen name="TaskList" component={TaskList} />
+            <Stack.Screen
+              name="PressReleaseList"
+              component={PressReleaseList}
+            />
+            <Stack.Screen name="AddPressRelease" component={AddPressRelease} />
+            <Stack.Screen name="Profile" component={Profile} />
+            <Stack.Screen name="AddEvent" component={AddEvents} />
+            <Stack.Screen name="EventsList" component={EventList} />
+            <Stack.Screen name="ViewEvent" component={ViewEvent} />
+            <Stack.Screen name="EditEvent" component={EditEvent} />
+            <Stack.Screen name="ViewTask" component={ViewTask} />
+            <Stack.Screen name="Gallery" component={Gallery} />
+            <Stack.Screen
+              name="ViewPressRelease"
+              component={ViewPressRelease}
+            />
+            <Stack.Screen
+              name="EditPressRelease"
+              component={EditPressRelease}
+            />
+            <Stack.Screen name="EditTask" component={EditTask} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }

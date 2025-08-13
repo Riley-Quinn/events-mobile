@@ -309,7 +309,9 @@ const AddTasks = () => {
               : 'Select Assignee'}
           </Text>
         </TouchableOpacity>
-
+        <Text style={styles.noteText}>
+          To assign the task to an individual, please use the Assign To option.
+        </Text>
         <TouchableOpacity
           style={styles.inputContainer}
           onPress={() => setShowRoleModal(true)}
@@ -318,6 +320,10 @@ const AddTasks = () => {
             {roleId ? roles.find(r => r.id === roleId)?.name : 'Select Role'}
           </Text>
         </TouchableOpacity>
+        <Text style={styles.noteText}>
+          To assign the task to a group of users, please select a Role — all
+          users under that role will receive the task{' '}
+        </Text>
         <Modal
           visible={showAssigneeModal}
           transparent
@@ -425,6 +431,28 @@ const AddTasks = () => {
 
         <TouchableOpacity
           style={styles.inputContainer}
+          onPress={() => setShowStartDatePicker(true)}
+        >
+          <Text style={styles.input}>
+            {StartedDate ? StartedDate : ' Start Date'}
+          </Text>
+        </TouchableOpacity>
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={StartedDate ? new Date(StartedDate) : new Date()}
+            mode="date"
+            onChange={(event, selectedDate) => {
+              setShowStartDatePicker(false);
+              if (selectedDate) {
+                const formattedDate = selectedDate.toISOString().split('T')[0];
+                setStartedDate(formattedDate);
+              }
+            }}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.inputContainer}
           onPress={() => setShowDatePicker(true)}
         >
           <Text style={styles.input}>
@@ -443,28 +471,6 @@ const AddTasks = () => {
               if (selectedDate) {
                 const formattedDate = selectedDate.toISOString().split('T')[0];
                 setEstimatedDate(formattedDate);
-              }
-            }}
-          />
-        )}
-
-        <TouchableOpacity
-          style={styles.inputContainer}
-          onPress={() => setShowStartDatePicker(true)}
-        >
-          <Text style={styles.input}>
-            {StartedDate ? StartedDate : ' Start Date'}
-          </Text>
-        </TouchableOpacity>
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={StartedDate ? new Date(StartedDate) : new Date()}
-            mode="date"
-            onChange={(event, selectedDate) => {
-              setShowStartDatePicker(false);
-              if (selectedDate) {
-                const formattedDate = selectedDate.toISOString().split('T')[0];
-                setStartedDate(formattedDate);
               }
             }}
           />
@@ -520,6 +526,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 30,
     alignSelf: 'flex-start',
+  },
+  noteText: {
+    color: '#888',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 30,
+    alignSelf: 'flex-start',
+  },
+
+  modalNote: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 100,
   },
 
   header: {

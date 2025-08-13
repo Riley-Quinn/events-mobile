@@ -121,7 +121,7 @@ const DayView = () => {
           axios.get(`${BASE_URL}/api/specialdays/all`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${BASE_URL}/api/tasks?all=true`, {
+          axios.get(`${BASE_URL}/api/tasks`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -259,7 +259,7 @@ const DayView = () => {
               ? 'birthdays'
               : key === 'date'
               ? 'events'
-              : key === 'task_date'
+              : key === 'start_date'
               ? 'tasks'
               : 'importantDays',
         }));
@@ -345,6 +345,9 @@ const DayView = () => {
                   onPress={() => {
                     if (item.category === 'events') {
                       navigation.navigate('ViewEvent', { id: item.id });
+                    }
+                    if (item.category === 'tasks') {
+                      navigation.navigate('ViewTask', { id: item.task_id });
                     }
                   }}
                   onLongPress={() => {

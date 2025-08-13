@@ -26,6 +26,7 @@ const COLORS = {
   birthdays: '#e3d1ff',
   events: '#d6ffea',
   importantDays: '#ffe3bc',
+  tasks: '#ff7f7f',
 };
 
 const MonthView = () => {
@@ -35,6 +36,7 @@ const MonthView = () => {
     birthdays: [],
     events: [],
     importantDays: [],
+    tasks: [],
   });
   const formattedDisplayDate = moment(currentDate).format('D,MMMM YYYY');
 
@@ -60,22 +62,27 @@ const MonthView = () => {
     try {
       const token = await AsyncStorage.getItem('token');
 
-      const [birthdaysRes, eventsRes, specialDaysRes] = await Promise.all([
-        axios.get(`${BASE_URL}/api/birthdays/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${BASE_URL}/api/events/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${BASE_URL}/api/specialdays/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const [birthdaysRes, eventsRes, specialDaysRes, tasksRes] =
+        await Promise.all([
+          axios.get(`${BASE_URL}/api/birthdays/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/events/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/specialdays/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/api/tasks`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
       setAllData({
         birthdays: birthdaysRes.data,
         events: eventsRes.data,
         importantDays: specialDaysRes.data,
+        tasks: tasksRes.data.list,
       });
     } catch (err) {
       console.error('Error fetching month data', err);
@@ -106,8 +113,16 @@ const MonthView = () => {
       .map(item => ({
         id: `e-${item.id}`,
         eid: item.id,
-        title: item.name || item.title,
+        title: item.title,
         category: 'events',
+      }));
+    const tasks = allData.tasks
+      .filter(item => formatDate(item.start_date) === date)
+      .map(item => ({
+        id: `e-${item.task_id}`,
+        eid: item.task_id,
+        title: item.title,
+        category: 'tasks',
       }));
     const importantDays = allData.importantDays
       .filter(item => formatDate(item.importantDay_date) === date)
@@ -120,7 +135,7 @@ const MonthView = () => {
         category: 'importantDays',
       }));
 
-    setFilteredEvents([...birthdays, ...events, ...importantDays]);
+    setFilteredEvents([...birthdays, ...events, ...tasks, ...importantDays]);
   };
 
   const markedDates = useMemo(() => {
@@ -154,7 +169,11 @@ const MonthView = () => {
       const date = moment(item.date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'events');
     });
-
+    //tasks
+    allData.tasks.forEach(item => {
+      const date = moment(item.start_date).format('YYYY-MM-DD');
+      if (date.startsWith(visibleMonth)) markDay(date, 'events');
+    });
     // Important Days
     allData.importantDays.forEach(item => {
       const date = moment(item.importantDay_date).format('YYYY-MM-DD');
@@ -321,6 +340,9 @@ const MonthView = () => {
                   if (item.category === 'events') {
                     navigation.navigate('ViewEvent', { id: item.eid });
                   }
+                  if (item.category === 'tasks') {
+                    navigation.navigate('ViewTask', { id: item.eid });
+                  }
                 }}
                 onLongPress={() => {
                   if (item.category === 'birthdays') {
@@ -357,6 +379,8 @@ const MonthView = () => {
                       <Text style={styles.emoji}>🎉</Text>
                     ) : item.category === 'importantDays' ? (
                       <Text style={styles.emoji}>🔔</Text>
+                    ) : item.category === 'tasks' ? (
+                      <Text style={styles.emoji}>⭐</Text>
                     ) : (
                       <Icons name="arrow-right-circle" size={50} color="#000" />
                     )}

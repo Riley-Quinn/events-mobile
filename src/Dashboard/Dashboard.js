@@ -6,7 +6,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   Image,
   ScrollView,
 } from 'react-native';
@@ -17,9 +16,6 @@ import { BASE_URL } from '@env';
 import moment from 'moment';
 import PushNotification from 'react-native-push-notification';
 import messaging from '@react-native-firebase/messaging'; // make sure this is imported
-import { Alert } from 'react-native'; // already imported
-
-const { width } = Dimensions.get('window');
 
 const DashboardScreen = () => {
   const navigation = useNavigation();
@@ -70,7 +66,6 @@ const DashboardScreen = () => {
         const resTasks = await axios.get(`${BASE_URL}/api/tasks?all=true`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('✅ Tasks API Response:', resTasks.data.list);
 
         const tasks = Array.isArray(resTasks.data.list)
           ? resTasks.data.list
@@ -187,7 +182,7 @@ const DashboardScreen = () => {
 
       const today = moment().format('YYYY-MM-DD');
       const todayBirthdays = res.data.filter(
-        b => moment(b.date).format('YYYY-MM-DD') === today,
+        b => moment(b.birth_date).format('YYYY-MM-DD') === today,
       );
 
       setBirthdayNames(todayBirthdays.map(b => b.name));
@@ -200,15 +195,13 @@ const DashboardScreen = () => {
     <ScrollView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
-          <Icon name="menu" size={28} color="#000" />
-        </TouchableOpacity>
-
         <View style={styles.headerContent}>
-          <Image
-            source={require('../../assets/Profile.png')}
-            style={styles.avatar}
-          />
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            <Image
+              source={require('../../assets/Profile.png')}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
           <View>
             <Text style={styles.roleBadge}>{roleName}</Text>
             <Text style={styles.name}>{userName}</Text>
@@ -259,11 +252,23 @@ const DashboardScreen = () => {
           </Text>
 
           <TouchableOpacity onPress={() => navigation.navigate('TaskList')}>
-            <Image
-              source={require('../../assets/top-right.png')} // ✅ replace with your image path
-              style={{ width: 10, height: 10 }} // ✅ same size as icon
-              resizeMode="contain"
-            />
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 4,
+                borderRadius: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 20,
+                height: 20,
+              }}
+            >
+              <Image
+                source={require('../../assets/top-right.png')}
+                style={{ width: 10, height: 10 }}
+                resizeMode="contain"
+              />
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -282,17 +287,33 @@ const DashboardScreen = () => {
           <TouchableOpacity
             onPress={() => navigation.navigate('PressReleaseList')}
           >
-            <Image
-              source={require('../../assets/top-right.png')} // ✅ replace with your image path
-              style={{ width: 10, height: 10 }} // ✅ same size as icon
-              resizeMode="contain"
-            />
+            <View
+              style={{
+                backgroundColor: '#fff',
+                padding: 4,
+                borderRadius: 4,
+              }}
+            >
+              <Image
+                source={require('../../assets/top-right.png')}
+                style={{ width: 10, height: 10 }}
+                resizeMode="contain"
+              />
+            </View>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.rowContainer}>
-        <View style={{ flex: 1, marginRight: 10 }}>
+        <View
+          style={{
+            flex: 1,
+            marginRight: 10,
+            backgroundColor: '#fff',
+            padding: 8,
+            borderRadius: 15,
+          }}
+        >
           {[
             {
               icon: 'playlist-check',
@@ -338,6 +359,8 @@ const DashboardScreen = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingVertical: 3,
+                borderBottomWidth: i !== 5 ? 1 : 0, // Add divider except last item (index 5)
+                borderBottomColor: '#ccc',
               }}
             >
               <View
@@ -368,7 +391,7 @@ const DashboardScreen = () => {
 
                   fontSize: 14,
                   fontWeight: 'bold',
-                  color: '#000', // ✅ count always black
+                  color: '#000',
                 }}
               >
                 {taskStatusCounts[item.label] || 0}
@@ -376,7 +399,16 @@ const DashboardScreen = () => {
             </View>
           ))}
         </View>
-        <View style={{ flex: 1 }}>
+        <View
+          style={{
+            flex: 1,
+            marginRight: 10,
+            backgroundColor: '#fff',
+            padding: 8,
+
+            borderRadius: 15,
+          }}
+        >
           {[
             {
               image: require('../../assets/draft.png'),
@@ -422,9 +454,10 @@ const DashboardScreen = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingVertical: 3,
+                borderBottomWidth: i !== 5 ? 1 : 0, // Add divider except last item (index 5)
+                borderBottomColor: '#ccc',
               }}
             >
-              {/* ✅ Image with background */}
               <View
                 style={{
                   backgroundColor: item.bg,
@@ -439,7 +472,6 @@ const DashboardScreen = () => {
                 />
               </View>
 
-              {/* ✅ Status Label */}
               <Text
                 style={{
                   flex: 1,
@@ -452,7 +484,6 @@ const DashboardScreen = () => {
                 {item.label}
               </Text>
 
-              {/* ✅ Count (always black) */}
               <Text
                 style={{
                   fontSize: 14,
@@ -466,147 +497,235 @@ const DashboardScreen = () => {
           ))}
         </View>
       </View>
-      {/* ✅ Today Tasks */}
-      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+      {/* Today Tasks Section */}
+      <View style={{ marginTop: 20 }}>
         <View
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+            paddingHorizontal: 20,
+            marginBottom: 8,
           }}
         >
           <Text style={styles.sectionTitle}>Today Tasks</Text>
-          <TouchableOpacity
-            style={styles.viewAllButton}
-            onPress={() => navigation.navigate('TaskList')}
-          >
-            <Text style={styles.viewAllButtonText}>View All</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('TaskList')}>
+            <Text
+              style={{
+                color: '#888',
+                fontWeight: '600',
+                backgroundColor: '#fff',
+                padding: 10,
+                borderRadius: 10,
+              }}
+            >
+              View All
+            </Text>
           </TouchableOpacity>
         </View>
+        <View
+          style={{
+            backgroundColor: '#FFF5E6',
+            borderRadius: 12,
+            marginHorizontal: 20,
+            paddingVertical: 12,
+            shadowColor: '#000',
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
+          {todayTasks.length === 0 ? (
+            <Text
+              style={{
+                fontStyle: 'italic',
+                color: '#777',
+                textAlign: 'center',
+                paddingVertical: 15,
+              }}
+            >
+              No Tasks
+            </Text>
+          ) : (
+            todayTasks.slice(0, 3).map((task, i) => {
+              const time = moment(task.created_at).format('hh:mm A');
+              const [hourMin, ampm] = time.split(' ');
 
-        {todayTasks.slice(0, 3).map((task, i) => {
-          const time = moment(task.created_at).format('hh:mm A');
-          const [hourMin, ampm] = time.split(' ');
-
-          return (
-            <View key={i} style={{ marginTop: 16 }}>
-              {/* First Line → Time + Title */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={{ fontWeight: '600', color: '#000', fontSize: 14 }}
-                >
-                  {hourMin}
-                </Text>
-                <Text
+              return (
+                <View
+                  key={i}
                   style={{
-                    fontWeight: '600',
-                    color: '#000',
-                    fontSize: 14,
-                    marginLeft: 20, // ✅ GAP between time & title
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderBottomWidth: i < todayTasks.length - 1 ? 1 : 0,
+                    borderColor: '#DDD',
                   }}
                 >
-                  {task.title}
-                </Text>
-              </View>
-
-              {/* Second Line → AM/PM + Location */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginTop: 4,
-                }}
-              >
-                <Text
-                  style={{ fontWeight: 'bold', color: '#888', fontSize: 13 }}
-                >
-                  {ampm}
-                </Text>
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    color: '#888',
-                    fontSize: 13,
-                    marginLeft: 20, // ✅ GAP between am/pm & location
-                  }}
-                >
-                  {task.location}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{ fontWeight: '600', color: '#000', fontSize: 14 }}
+                    >
+                      {hourMin}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: '600',
+                        color: '#000',
+                        fontSize: 14,
+                        marginLeft: 20,
+                      }}
+                    >
+                      {task.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#888',
+                        fontSize: 13,
+                      }}
+                    >
+                      {ampm}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#888',
+                        fontSize: 13,
+                        marginLeft: 20,
+                      }}
+                    >
+                      {task.location}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
       </View>
 
-      {/* ✅ Today Events */}
-      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+      {/* Today Events Section */}
+      <View style={{ marginTop: 20 }}>
         <View
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+            paddingHorizontal: 20,
+            marginBottom: 8,
           }}
         >
           <Text style={styles.sectionTitle}>Today Events</Text>
-          <TouchableOpacity
-            style={styles.viewAllButton}
-            onPress={() => navigation.navigate('EventsList')}
-          >
-            <Text style={styles.viewAllButtonText}>View All</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('EventsList')}>
+            <Text
+              style={{
+                color: '#888',
+                fontWeight: '600',
+                backgroundColor: '#fff',
+                padding: 10,
+                borderRadius: 10,
+              }}
+            >
+              View All
+            </Text>
           </TouchableOpacity>
         </View>
-        {todayEvents.slice(0, 3).map((event, i) => {
-          const time = moment(event.date).format('hh:mm A');
-          const [hourMin, ampm] = time.split(' ');
 
-          return (
-            <View key={i} style={{ marginTop: 12, marginBottom: 12 }}>
-              {/* First Line → Time + Event Title */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={{ fontWeight: '600', fontSize: 14, color: '#000' }}
-                >
-                  {hourMin}
-                </Text>
-                <Text
+        <View
+          style={{
+            backgroundColor: '#E6F2FF',
+            borderRadius: 12,
+            marginHorizontal: 20,
+            paddingVertical: 12,
+            shadowColor: '#000',
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}
+        >
+          {todayEvents.length === 0 ? (
+            <Text
+              style={{
+                fontStyle: 'italic',
+                color: '#777',
+                textAlign: 'center',
+                paddingVertical: 15,
+              }}
+            >
+              No Events
+            </Text>
+          ) : (
+            todayEvents.slice(0, 3).map((event, i) => {
+              const time = moment(event.date).format('hh:mm A');
+              const [hourMin, ampm] = time.split(' ');
+
+              return (
+                <View
+                  key={i}
                   style={{
-                    fontWeight: '600',
-                    fontSize: 14,
-                    color: '#000',
-                    marginLeft: 20, // ✅ GAP between time & title
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderBottomWidth: i < todayEvents.length - 1 ? 1 : 0,
+                    borderColor: '#DDD',
                   }}
                 >
-                  {event.title}
-                </Text>
-              </View>
-
-              {/* Second Line → AM/PM + Event Location */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginTop: 4,
-                }}
-              >
-                <Text
-                  style={{ fontWeight: 'bold', fontSize: 13, color: '#888' }}
-                >
-                  {ampm}
-                </Text>
-                <Text
-                  style={{
-                    fontWeight: 'bold',
-                    fontSize: 13,
-                    color: '#888',
-                    marginLeft: 20, // ✅ GAP between am/pm & location
-                  }}
-                >
-                  {event.location || 'No Location'}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{ fontWeight: '600', fontSize: 14, color: '#000' }}
+                    >
+                      {hourMin}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: '600',
+                        fontSize: 14,
+                        color: '#000',
+                        marginLeft: 20,
+                      }}
+                    >
+                      {event.title}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: 13,
+                        color: '#888',
+                      }}
+                    >
+                      {ampm}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: 13,
+                        color: '#888',
+                        marginLeft: 20,
+                      }}
+                    >
+                      {event.location || 'No Location'}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
       </View>
     </ScrollView>
   );
