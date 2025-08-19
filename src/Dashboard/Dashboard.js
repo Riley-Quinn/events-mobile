@@ -1,21 +1,30 @@
-/* eslint-disable react-native/no-inline-styles */
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
+  Platform,
   Text,
+  Animated,
   StyleSheet,
   TouchableOpacity,
   Image,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Icons from 'react-native-vector-icons/Ionicons';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { BASE_URL } from '@env';
 import moment from 'moment';
 import PushNotification from 'react-native-push-notification';
-import messaging from '@react-native-firebase/messaging'; // make sure this is imported
+import { Linking, Alert } from 'react-native';
+
+import messaging from '@react-native-firebase/messaging';
+
+const { width } = Dimensions.get('window');
 
 const DashboardScreen = () => {
   const navigation = useNavigation();
@@ -23,15 +32,21 @@ const DashboardScreen = () => {
   const [roleName, setRoleName] = useState('');
   const [todayEvents, setTodayEvents] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const fadeAnim = useState(new Animated.Value(0))[0];
   const [birthdayNames, setBirthdayNames] = useState([]);
   const [taskStatusCounts, setTaskStatusCounts] = useState({});
   const [pressReleaseCounts, setPressReleaseCounts] = useState({});
+
+  // NEW: Scroll ref for auto-scroll
+  const scrollRef = useRef(null);
+
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('🔔 Foreground FCM:', remoteMessage);
 
       PushNotification.localNotification({
-        channelId: 'default-channel-id', // Make sure this matches your created channel
+        channelId: 'default-channel-id',
         title: remoteMessage.notification?.title || 'Notification',
         message: remoteMessage.notification?.body || 'You have a message',
         bigText: remoteMessage.notification?.body || '',
@@ -62,7 +77,6 @@ const DashboardScreen = () => {
       try {
         const token = await AsyncStorage.getItem('token');
 
-        // ✅ Fetch tasks
         const resTasks = await axios.get(`${BASE_URL}/api/tasks?all=true`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -173,6 +187,40 @@ const DashboardScreen = () => {
     }
   };
 
+  const shareBirthdayWishes = names => {
+    if (names.length === 0) {
+      Alert.alert('No birthdays to share!');
+      return;
+    }
+
+    const message = `Happy Birthday ${names.join(', ')}! 🎉🎂`;
+    const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
+    const storeLink =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/app/whatsapp-messenger/id310633997'
+        : 'https://play.google.com/store/apps/details?id=com.whatsapp';
+
+    Linking.canOpenURL(url)
+      .then(supported => {
+        if (!supported) {
+          Alert.alert(
+            'WhatsApp not installed',
+            'You need WhatsApp to send birthday wishes. Install it from here?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Install',
+                onPress: () => Linking.openURL(storeLink),
+              },
+            ],
+          );
+        } else {
+          return Linking.openURL(url);
+        }
+      })
+      .catch(err => console.error('Error opening WhatsApp', err));
+  };
+
   const fetchTodayBirthdays = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -191,9 +239,26 @@ const DashboardScreen = () => {
     }
   };
 
+  // NEW: Auto scroll effect
+  useEffect(() => {
+    if (birthdayNames.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentIndex(prev => {
+          const nextIndex = (prev + 1) % birthdayNames.length;
+          scrollRef.current?.scrollTo({
+            x: nextIndex * width,
+            animated: true,
+          });
+          return nextIndex;
+        });
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [birthdayNames]);
+
   return (
     <ScrollView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -209,25 +274,66 @@ const DashboardScreen = () => {
         </View>
       </View>
 
-      {/* BIRTHDAY CARD */}
       <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
         <View style={styles.birthdayWrapper}>
-          <View style={styles.birthdayCard}>
-            <Image
-              source={require('../../assets/confetti.png')} // ✅ your birthday image
-              style={{ width: 35, height: 35 }} // ✅ same size as icon
-              resizeMode="contain"
-            />
+          {birthdayNames.length > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              ref={scrollRef}
+            >
+              {birthdayNames.map((name, index) => (
+                <View
+                  key={index}
+                  style={[styles.birthdayCard, { width: width - 40 }]}
+                >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => shareBirthdayWishes([name])}
+                      style={{ marginLeft: 8 }}
+                    >
+                      <Icon name="share-outline" size={28} color="#FF6B81" />
+                    </TouchableOpacity>
+                  </View>
 
-            <View style={{ marginLeft: 10 }}>
-              <Text style={styles.birthdayTitle}>Happy Birthday</Text>
-              <Text style={[styles.birthdayText, { marginTop: 6 }]}>
-                {birthdayNames.length > 0
-                  ? birthdayNames.join(', ')
-                  : 'No Birthdays Today'}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <FontAwesome5
+                      name="birthday-cake"
+                      size={35}
+                      color="#FF6B81"
+                      style={{ marginRight: 20 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.birthdayTitle}>Happy Birthday</Text>
+                      <Text style={styles.birthdayName}>{name}</Text>
+                      <Text style={styles.birthdayRole}>{roleName}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.birthdayCard}>
+              <Text style={[styles.birthdayText, { textAlign: 'center' }]}>
+                No Birthdays Today
               </Text>
             </View>
-          </View>
+          )}
         </View>
       </TouchableOpacity>
       <View
@@ -238,7 +344,6 @@ const DashboardScreen = () => {
           marginTop: 20,
         }}
       >
-        {/* Task Status Header with ^ icon */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text
             style={{
@@ -272,7 +377,6 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Press Release Status Header with ^ icon */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text
             style={{
@@ -311,7 +415,7 @@ const DashboardScreen = () => {
             marginRight: 10,
             backgroundColor: '#fff',
             padding: 8,
-            borderRadius: 15,
+            borderRadius: 12,
           }}
         >
           {[
@@ -359,7 +463,7 @@ const DashboardScreen = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingVertical: 3,
-                borderBottomWidth: i !== 5 ? 1 : 0, // Add divider except last item (index 5)
+                borderBottomWidth: i !== 5 ? 1 : 0,
                 borderBottomColor: '#ccc',
               }}
             >
@@ -406,7 +510,7 @@ const DashboardScreen = () => {
             backgroundColor: '#fff',
             padding: 8,
 
-            borderRadius: 15,
+            borderRadius: 12,
           }}
         >
           {[
@@ -454,7 +558,7 @@ const DashboardScreen = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingVertical: 3,
-                borderBottomWidth: i !== 5 ? 1 : 0, // Add divider except last item (index 5)
+                borderBottomWidth: i !== 5 ? 1 : 0,
                 borderBottomColor: '#ccc',
               }}
             >
@@ -497,7 +601,7 @@ const DashboardScreen = () => {
           ))}
         </View>
       </View>
-      {/* Today Tasks Section */}
+
       <View style={{ marginTop: 20 }}>
         <View
           style={{
@@ -508,8 +612,8 @@ const DashboardScreen = () => {
             marginBottom: 8,
           }}
         >
-          <Text style={styles.sectionTitle}>Today Tasks</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('TaskList')}>
+          <Text style={styles.sectionTitle}>Today Schedules</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
             <Text
               style={{
                 color: '#888',
@@ -523,61 +627,91 @@ const DashboardScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-        <View
-          style={{
-            backgroundColor: '#FFF5E6',
-            borderRadius: 12,
-            marginHorizontal: 20,
-            paddingVertical: 12,
-            shadowColor: '#000',
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-          }}
-        >
-          {todayTasks.length === 0 ? (
-            <Text
-              style={{
-                fontStyle: 'italic',
-                color: '#777',
-                textAlign: 'center',
-                paddingVertical: 15,
-              }}
-            >
-              No Tasks
-            </Text>
-          ) : (
-            todayTasks.slice(0, 3).map((task, i) => {
-              const time = moment(task.created_at).format('hh:mm A');
-              const [hourMin, ampm] = time.split(' ');
+
+        {todayTasks.length === 0 && todayEvents.length === 0 ? (
+          <Text
+            style={{
+              fontStyle: 'italic',
+              color: '#777',
+              textAlign: 'center',
+              paddingVertical: 15,
+              marginHorizontal: 20,
+            }}
+          >
+            No Schedule Today
+          </Text>
+        ) : (
+          <>
+            {todayTasks.map((task, i) => {
+              const hour = moment(task.created_at).format('hh');
+              const minutesOnly = moment(task.created_at).format('mm');
+              const ampm = moment(task.created_at).format('A');
 
               return (
-                <View
-                  key={i}
+                <TouchableOpacity
+                  key={`task-${i}`}
+                  onPress={() => navigation.navigate('TaskList')}
                   style={{
-                    paddingHorizontal: 20,
+                    backgroundColor: '#4A90E2',
+                    borderRadius: 12,
+                    marginHorizontal: 20,
                     paddingVertical: 12,
-                    borderBottomWidth: i < todayTasks.length - 1 ? 1 : 0,
-                    borderColor: '#DDD',
+                    paddingHorizontal: 20,
+                    marginBottom: 12,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                    position: 'relative',
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text
-                      style={{ fontWeight: '600', color: '#000', fontSize: 14 }}
-                    >
-                      {hourMin}
-                    </Text>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      backgroundColor: '#fff',
+                      paddingHorizontal: 8,
+
+                      borderRadius: 12,
+                      height: 18,
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text
                       style={{
                         fontWeight: '600',
-                        color: '#000',
+                        fontSize: 12,
+                        color: '#4A90E2',
+                      }}
+                    >
+                      Task
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
                         fontSize: 14,
-                        marginLeft: 20,
+                        color: '#fff',
+                        width: 80,
+                      }}
+                    >
+                      {hour}:00 {ampm}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        color: '#fff',
+                        flex: 1,
                       }}
                     >
                       {task.title}
                     </Text>
                   </View>
+
                   <View
                     style={{
                       flexDirection: 'row',
@@ -588,112 +722,98 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        color: '#888',
-                        fontSize: 13,
+                        fontSize: 14,
+                        color: '#ccc',
+                        width: 80,
                       }}
                     >
-                      {ampm}
+                      {minutesOnly} min
                     </Text>
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        color: '#888',
-                        fontSize: 13,
-                        marginLeft: 20,
+                        fontSize: 14,
+                        color: '#ccc',
+                        flex: 1,
                       }}
                     >
                       {task.location}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
-            })
-          )}
-        </View>
-      </View>
+            })}
 
-      {/* Today Events Section */}
-      <View style={{ marginTop: 20 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingHorizontal: 20,
-            marginBottom: 8,
-          }}
-        >
-          <Text style={styles.sectionTitle}>Today Events</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('EventsList')}>
-            <Text
-              style={{
-                color: '#888',
-                fontWeight: '600',
-                backgroundColor: '#fff',
-                padding: 10,
-                borderRadius: 10,
-              }}
-            >
-              View All
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View
-          style={{
-            backgroundColor: '#E6F2FF',
-            borderRadius: 12,
-            marginHorizontal: 20,
-            paddingVertical: 12,
-            shadowColor: '#000',
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-          }}
-        >
-          {todayEvents.length === 0 ? (
-            <Text
-              style={{
-                fontStyle: 'italic',
-                color: '#777',
-                textAlign: 'center',
-                paddingVertical: 15,
-              }}
-            >
-              No Events
-            </Text>
-          ) : (
-            todayEvents.slice(0, 3).map((event, i) => {
-              const time = moment(event.date).format('hh:mm A');
-              const [hourMin, ampm] = time.split(' ');
+            {todayEvents.map((event, i) => {
+              const hour = moment(event.created_at).format('hh');
+              const minutesOnly = moment(event.created_at).format('mm');
+              const ampm = moment(event.created_at).format('A');
 
               return (
-                <View
-                  key={i}
+                <TouchableOpacity
+                  key={`event-${i}`}
+                  onPress={() => navigation.navigate('EventsList')}
                   style={{
-                    paddingHorizontal: 20,
+                    backgroundColor: '#1ABC9C',
+                    borderRadius: 12,
+                    marginHorizontal: 20,
                     paddingVertical: 12,
-                    borderBottomWidth: i < todayEvents.length - 1 ? 1 : 0,
-                    borderColor: '#DDD',
+                    paddingHorizontal: 20,
+                    marginBottom: 12,
+                    shadowColor: '#000',
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                    position: 'relative',
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text
-                      style={{ fontWeight: '600', fontSize: 14, color: '#000' }}
-                    >
-                      {hourMin}
-                    </Text>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      backgroundColor: '#fff',
+                      paddingHorizontal: 8,
+
+                      borderRadius: 12,
+                      height: 18,
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text
                       style={{
                         fontWeight: '600',
+                        fontSize: 12,
+                        color: '#1ABC9C',
+                      }}
+                    >
+                      Event
+                    </Text>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
                         fontSize: 14,
-                        color: '#000',
-                        marginLeft: 20,
+                        color: '#fff',
+                        width: 80,
+                      }}
+                    >
+                      {hour}:00 {ampm}
+                    </Text>
+                    <Text
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: 14,
+                        color: '#fff',
+                        flex: 1,
                       }}
                     >
                       {event.title}
                     </Text>
                   </View>
+
                   <View
                     style={{
                       flexDirection: 'row',
@@ -704,28 +824,29 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 13,
-                        color: '#888',
+                        fontSize: 14,
+                        color: '#ccc',
+                        width: 80,
                       }}
                     >
-                      {ampm}
+                      {minutesOnly} min
                     </Text>
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 13,
-                        color: '#888',
-                        marginLeft: 20,
+                        fontSize: 14,
+                        color: '#ccc',
+                        flex: 1,
                       }}
                     >
-                      {event.location || 'No Location'}
+                      {event.location}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
-            })
-          )}
-        </View>
+            })}
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -777,6 +898,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  birthdayName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+
+    marginRight: 4,
+  },
+  birthdayRole: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: 'bold',
+    marginTop: 6,
+    marginLeft: 10,
+  },
+
   birthdayTitle: { fontSize: 16, fontWeight: 'bold', color: '#000' },
   birthdayText: { fontSize: 14, color: '#555', fontWeight: 'bold' },
   statusCard: {

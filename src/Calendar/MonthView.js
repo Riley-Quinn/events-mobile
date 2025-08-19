@@ -23,10 +23,10 @@ import { Alert } from 'react-native';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const COLORS = {
-  birthdays: '#e3d1ff',
-  events: '#d6ffea',
-  importantDays: '#ffe3bc',
-  tasks: '#ff7f7f',
+  birthdays: '#FF6B81',
+  events: '#1ABC9C',
+  importantDays: '#F8C471',
+  tasks: '#4A90E2',
 };
 
 const MonthView = () => {
@@ -146,8 +146,8 @@ const MonthView = () => {
         marks[date] = { marked: true, dots: [] };
       }
       marks[date].dots.push({
-        color: '#000', // All dots black
-        selectedDotColor: '#fff',
+        color: '#000',
+        selectedDotColor: 'blue',
       });
     };
 
@@ -329,7 +329,9 @@ const MonthView = () => {
         />
       ) : (
         <View style={styles.eventList}>
-          <Text style={styles.heading}>Events on {formattedDisplayDate}</Text>
+          <Text style={styles.heading}>
+            All schedules {formattedDisplayDate}
+          </Text>
           <FlatList
             data={filteredEvents}
             keyExtractor={(item, index) => index.toString()}
@@ -366,24 +368,56 @@ const MonthView = () => {
                     { backgroundColor: COLORS[item.category] },
                   ]}
                 >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      backgroundColor:
+                        item.category === 'birthdays'
+                          ? '#fff'
+                          : item.category === 'tasks'
+                          ? '#fff'
+                          : item.category === 'importantDays'
+                          ? '#fff'
+                          : '#fff',
+                      borderRadius: 12,
+                      paddingHorizontal: 10,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        color:
+                          item.category === 'birthdays'
+                            ? '#FF6B6B'
+                            : item.category === 'tasks'
+                            ? '#4A90E2'
+                            : item.category === 'importantDays'
+                            ? '#F8C471'
+                            : '#1ABC9C',
+                      }}
+                    >
+                      {item.category === 'birthdays'
+                        ? 'Birthday'
+                        : item.category === 'tasks'
+                        ? 'Task'
+                        : item.category === 'importantDays'
+                        ? 'ImportantDay'
+                        : 'Event'}
+                    </Text>
+                  </View>
+
                   <View style={styles.eventRow}>
                     <Text style={styles.eventText}>
                       {item.category === 'birthdays'
-                        ? `${item.name}'s Birthday `
+                        ? `${item.name}'s Birthday`
                         : item.category === 'importantDays'
-                        ? ` ${item.title}`
+                        ? item.title
                         : item.title}
                     </Text>
-
-                    {item.category === 'birthdays' ? (
-                      <Text style={styles.emoji}>🎉</Text>
-                    ) : item.category === 'importantDays' ? (
-                      <Text style={styles.emoji}>🔔</Text>
-                    ) : item.category === 'tasks' ? (
-                      <Text style={styles.emoji}>⭐</Text>
-                    ) : (
-                      <Icons name="arrow-right-circle" size={50} color="#000" />
-                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -475,7 +509,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     flex: 1,
-    backgroundColor: '#ff883a',
+    backgroundColor: '#ffeee6',
   },
   heading: {
     fontSize: 16,
@@ -490,12 +524,12 @@ const styles = StyleSheet.create({
   },
   noEvent: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 20 },
   eventCard: {
-    minHeight: 60,
+    minHeight: 50,
     borderRadius: 8,
     marginBottom: 15,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   eventText: { fontSize: 14, color: '#000', fontWeight: 'bold' },
   overlay: {
@@ -560,7 +594,13 @@ const styles = StyleSheet.create({
   },
 
   emoji: {
-    fontSize: 40, // make emoji bigger
+    fontSize: 14,
+    backgroundColor: 'red',
+    borderRadius: 15,
+    paddingHorizontal: 8,
+    // paddingVertical: 2,
+    fontcolor: '#000',
+    fontWeight: 'bold',
   },
 
   arrow: {

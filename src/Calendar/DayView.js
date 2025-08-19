@@ -25,6 +25,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BASE_URL } from '@env';
 import { ability, updateAbility } from '../casl/ability';
+import { PERMISSIONS } from '../Dashboard/contextPage';
 
 const timeSlots = Array.from(
   { length: 24 },
@@ -43,6 +44,7 @@ const DayView = () => {
   const [tabTouched, setTabTouched] = useState(false);
   const [selectedDate] = useState(moment().format('YYYY-MM-DD'));
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('Today');
 
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
   const [birthdayForm, setBirthdayForm] = useState({
@@ -289,16 +291,19 @@ const DayView = () => {
   };
 
   const renderTabs = () => {
+    const { birthdays, events, tasks, importantDays } = getFilteredItems();
+
     const tabs = tabTouched
       ? [
           'all',
           'birthdays',
-          ...(ability.can('view', 'Event') ? ['events'] : []),
+          ...(PERMISSIONS.viewEvent ? ['events'] : []),
           'importantDays',
         ]
       : [
+          'all',
           'birthdays',
-          ...(ability.can('view', 'Event') ? ['events'] : []),
+          ...(PERMISSIONS.viewEvent ? ['events'] : []),
           'importantDays',
         ];
 
@@ -307,6 +312,23 @@ const DayView = () => {
         {tabs.map(tab => {
           const isActive =
             (selectedTab === null && tab === 'all') || selectedTab === tab;
+
+          let count = 0;
+          let color = '#000';
+          if (tab === 'birthdays') {
+            count = birthdays.length;
+            color = COLORS.birthdays;
+          } else if (tab === 'events') {
+            count = events.length;
+            color = COLORS.events;
+          } else if (tab === 'tasks') {
+            count = tasks.length;
+            color = COLORS.tasks;
+          } else if (tab === 'importantDays') {
+            count = importantDays.length;
+            color = COLORS.importantDays;
+          }
+
           return (
             <TouchableOpacity
               key={tab}
@@ -316,9 +338,33 @@ const DayView = () => {
               }}
               style={[styles.tab, isActive && styles.activeTab]}
             >
-              <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-                {tab.toUpperCase()}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={[styles.tabText, isActive && styles.activeTabText]}
+                >
+                  {tab.toUpperCase()}
+                </Text>
+                {count > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: color,
+                      borderRadius: 10,
+                      minWidth: 20,
+                      paddingHorizontal: 6,
+                      height: 20,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginLeft: 5,
+                    }}
+                  >
+                    <Text
+                      style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}
+                    >
+                      {count}
+                    </Text>
+                  </View>
+                )}
+              </View>
               {isActive && <View style={styles.underline} />}
             </TouchableOpacity>
           );
@@ -416,22 +462,58 @@ const DayView = () => {
 
       <View style={styles.topNav}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('MonthView', { selectedDate })}
-          style={styles.navTabBackground}
+          onPress={() => {
+            setActiveTab('Month');
+            navigation.navigate('MonthView', { selectedDate });
+          }}
         >
-          <Text style={styles.navTabText}>Month</Text>
+          <Text
+            style={[
+              styles.navTabText,
+              activeTab === 'Month' && { fontWeight: '700', color: '#000' },
+            ]}
+          >
+            Month
+          </Text>
+          {activeTab === 'Month' && <View style={styles.line} />}
         </TouchableOpacity>
+
+        <Text style={styles.divider}>|</Text>
+
         <TouchableOpacity
-          onPress={() => navigation.navigate('WeekView', { selectedDate })}
-          style={styles.navTabBackground}
+          onPress={() => {
+            setActiveTab('Week');
+            navigation.navigate('WeekView', { selectedDate });
+          }}
         >
-          <Text style={styles.navTabText}>Week</Text>
+          <Text
+            style={[
+              styles.navTabText,
+              activeTab === 'Week' && { fontWeight: '700', color: '#000' },
+            ]}
+          >
+            Week
+          </Text>
+          {activeTab === 'Week' && <View style={styles.line} />}
         </TouchableOpacity>
+
+        <Text style={styles.divider}>|</Text>
+
         <TouchableOpacity
-          onPress={() => navigation.navigate('DayView')}
-          style={styles.navTabBackground}
+          onPress={() => {
+            setActiveTab('Today');
+            navigation.navigate('DayView');
+          }}
         >
-          <Text style={styles.navTabText}>Today</Text>
+          <Text
+            style={[
+              styles.navTabText,
+              activeTab === 'Today' && { fontWeight: '700', color: '#000' },
+            ]}
+          >
+            Today
+          </Text>
+          {activeTab === 'Today' && <View style={styles.line} />}
         </TouchableOpacity>
       </View>
 
@@ -441,40 +523,6 @@ const DayView = () => {
         </Text>
 
         {renderTabs()}
-
-        <View style={styles.countContainer}>
-          {birthdays.length > 0 && (
-            <View
-              style={[styles.countBox, { backgroundColor: COLORS.birthdays }]}
-            >
-              <Text style={styles.countText}>
-                Birthdays: {birthdays.length}
-              </Text>
-            </View>
-          )}
-          {events.length > 0 && (
-            <View style={[styles.countBox, { backgroundColor: COLORS.events }]}>
-              <Text style={styles.countText}>Events: {events.length}</Text>
-            </View>
-          )}
-          {tasks.length > 0 && (
-            <View style={[styles.countBox, { backgroundColor: COLORS.tasks }]}>
-              <Text style={styles.countText}>Tasks: {tasks.length}</Text>
-            </View>
-          )}
-          {importantDays.length > 0 && (
-            <View
-              style={[
-                styles.countBox,
-                { backgroundColor: COLORS.importantDays },
-              ]}
-            >
-              <Text style={styles.countText}>
-                Important Days: {importantDays.length}
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
       {loading ? (
         <ActivityIndicator
@@ -505,7 +553,67 @@ const DayView = () => {
           onPress={() => setShowOptionsModal(false)}
         >
           <View style={styles.bottomSheet}>
-            {[
+            {PERMISSIONS.addBirthday && (
+              <TouchableOpacity
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  setShowBirthdayModal(true);
+                }}
+              >
+                <Text style={styles.optionText}>Add Birthday</Text>
+              </TouchableOpacity>
+            )}
+
+            {PERMISSIONS.addImportantDay && (
+              <TouchableOpacity
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  setShowImportantDayModal(true);
+                }}
+              >
+                <Text style={styles.optionText}>Add Important Day</Text>
+              </TouchableOpacity>
+            )}
+
+            {PERMISSIONS.addEvent && (
+              <TouchableOpacity
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  navigation.navigate('AddEvent');
+                }}
+              >
+                <Text style={styles.optionText}>Add Event</Text>
+              </TouchableOpacity>
+            )}
+
+            {PERMISSIONS.addTask && (
+              <TouchableOpacity
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  navigation.navigate('AddTasks');
+                }}
+              >
+                <Text style={styles.optionText}>Add Task</Text>
+              </TouchableOpacity>
+            )}
+
+            {PERMISSIONS.addPressRelease && (
+              <TouchableOpacity
+                style={styles.optionBtn}
+                onPress={() => {
+                  setShowOptionsModal(false);
+                  navigation.navigate('AddPressRelease');
+                }}
+              >
+                <Text style={styles.optionText}>Add PressNote</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* {[
               'Add Birthday',
               'Add Important Day',
               'Add Event',
@@ -534,7 +642,7 @@ const DayView = () => {
               >
                 <Text style={styles.optionText}>{text}</Text>
               </TouchableOpacity>
-            ))}
+            ))} */}
           </View>
         </Pressable>
       </Modal>
@@ -923,37 +1031,46 @@ const DayView = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9f9f9' },
   header: {
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 10,
     alignItems: 'center',
     backgroundColor: '#ffeee6',
     borderBottomColor: '#eee',
     borderBottomWidth: 1,
   },
-  navTabBackground: {
-    backgroundColor: '#ff883a',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  navTabText: {
-    color: '#000',
+  divider: {
+    marginHorizontal: 8,
+    color: '#888',
+    fontSize: 16,
     fontWeight: 'bold',
-    fontSize: 14,
+    marginTop: 30,
+    lineHeight: 20,
+    textAlignVertical: 'center',
   },
+
+  topNav: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    marginVertical: 5,
+  },
+
+  navTabText: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 30,
+    fontWeight: 'bold',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+
   dateText: {
     fontSize: 20,
     color: '#222',
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginTop: 2,
   },
-  topNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    marginTop: 30,
-    backgroundColor: '#ffeee6',
-  },
+
   timelineContainer: {
     flex: 1,
     paddingHorizontal: 10,
@@ -980,22 +1097,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontWeight: '600',
-    fontSize: 13,
+    fontSize: 12,
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#ffeee6',
     paddingVertical: 8,
     justifyContent: 'center',
-    flexWrap: 'wrap',
+    marginTop: 4,
   },
   tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 20,
-    marginHorizontal: 6,
+    marginHorizontal: 2,
   },
-  activeTab: { backgroundColor: '#ff883a' },
   tabText: { color: '#888', fontWeight: 'bold', fontSize: 13 },
   activeTabText: { color: '#000', fontWeight: 'bold' },
   verticalLine: {
@@ -1004,11 +1120,11 @@ const styles = StyleSheet.create({
     height: '100%',
     marginHorizontal: 8,
   },
-  underline: {
+  line: {
     marginTop: 4,
     height: 2,
     width: '100%',
-    backgroundColor: '#ffeee6',
+    backgroundColor: 'black',
     borderRadius: 1,
   },
   countContainer: {
@@ -1102,7 +1218,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#bbb',
     marginVertical: 4,
-    marginLeft: 60, // align with time label
+    marginLeft: 60,
   },
 });
 

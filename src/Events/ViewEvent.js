@@ -9,12 +9,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
@@ -27,6 +28,28 @@ const ViewEvent = ({ route, navigation }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'App needs camera access to take photos and videos.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const fetchEvent = useCallback(async () => {
     const token = await AsyncStorage.getItem('token');
@@ -71,6 +94,37 @@ const ViewEvent = ({ route, navigation }) => {
         const asset = response.assets?.[0];
         if (!asset) {
           Alert.alert('Error', 'No file selected');
+          return;
+        }
+
+        setSelectedFile(asset);
+      },
+    );
+  };
+
+  const captureFromCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Denied',
+        'Camera access is required to take photos or videos.',
+      );
+      return;
+    }
+
+    if (media.length >= 4) {
+      Alert.alert('Limit Reached', 'You can only upload 4 images.');
+      return;
+    }
+
+    launchCamera(
+      { mediaType: 'mixed', videoQuality: 'high', saveToPhotos: true },
+      response => {
+        if (response.didCancel) return;
+
+        const asset = response.assets?.[0];
+        if (!asset) {
+          Alert.alert('Error', 'No file captured');
           return;
         }
 
@@ -258,67 +312,56 @@ const ViewEvent = ({ route, navigation }) => {
       <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>Description: </Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
+            <Text style={styles.value}>{event.description}</Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Location</Text>
-            <Text style={styles.value}> : {event.location}</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.value}>{event.location}</Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Date</Text>
+            <Text style={styles.colon}>:</Text>
             <Text style={styles.value}>
-              {' '}
-              : {moment(event.date).format('DD MMM YYYY')}
+              {moment(event.date).format('DD MMM YYYY')}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Time</Text>
+            <Text style={styles.colon}>:</Text>
             <Text style={styles.value}>
-              :{' '}
               {event.time === '00:00:00'
                 ? 'All Day'
                 : moment(event.time, 'HH:mm:ss').format('hh:mm A')}
             </Text>
           </View>
         </View>
-
-        <View style={{ marginTop: 20 }}>
-          <TouchableOpacity style={styles.uploadBtn} onPress={selectFile}>
-            <Text style={styles.uploadText}>Choose File</Text>
+        <View
+          style={{
+            marginTop: 20,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
+          <TouchableOpacity
+            style={[styles.uploadBtn, { flex: 1, marginRight: 5 }]}
+            onPress={selectFile}
+          >
+            <Text style={styles.uploadText}>Choose from Gallery</Text>
           </TouchableOpacity>
 
-          {selectedFile && (
-            <>
-              <Text
-                style={{ marginTop: 10, textAlign: 'center', color: '#000' }}
-              >
-                Selected: {selectedFile.fileName}
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.uploadBtn,
-                  { backgroundColor: '#28a745', marginTop: 10 },
-                ]}
-                onPress={uploadFile}
-                disabled={uploading}
-              >
-                {uploading && (
-                  <ActivityIndicator
-                    size="small"
-                    color="#fff"
-                    style={{ marginRight: 8 }}
-                  />
-                )}
-                <Text style={styles.uploadText}>
-                  {uploading ? 'Uploading...' : 'Upload Selected File'}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={[
+              styles.uploadBtn,
+              { backgroundColor: '#007bff', flex: 1, marginLeft: 5 },
+            ]}
+            onPress={captureFromCamera}
+          >
+            <Text style={styles.uploadText}>Capture from Camera</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.sectionTitle}>Uploaded Media</Text>
@@ -353,14 +396,39 @@ const styles = StyleSheet.create({
     borderWidth: 0.1,
     borderRadius: 10,
     padding: 20,
+    marginTop: 15,
+    marginHorizontal: 15,
     backgroundColor: '#fff',
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
-  row: { flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' },
-  label: { fontWeight: 'bold', color: '#000', fontSize: 18 },
-  value: { color: '#000', fontSize: 18, flexShrink: 1 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 5,
+  },
+
+  label: {
+    fontWeight: 'bold',
+    color: '#000',
+    fontSize: 16,
+    width: 80,
+  },
+
+  colon: {
+    fontSize: 16,
+    color: '#000',
+    width: 10,
+  },
+
+  value: {
+    flex: 1,
+    fontSize: 18,
+    color: '#000',
+    flexWrap: 'wrap',
+  },
+
   descriptionText: { fontSize: 16, color: '#000', marginTop: 4 },
   uploadBtn: {
     backgroundColor: '#ff883a',

@@ -5,6 +5,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
+import moment from 'moment';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
@@ -13,28 +15,34 @@ import { DraxProvider, DraxList } from 'react-native-drax';
 const TaskList = () => {
   const navigation = useNavigation();
   const [tasks, setTasks] = useState([]);
+  const [showAll, setShowAll] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchTasks();
-    }, []),
+      fetchTasks(showAll);
+    }, [showAll]),
   );
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (showAll = false) => {
     try {
-      console.log(' Token:', token);
-
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/tasks?all=true`, {
+      const res = await axios.get(`${BASE_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log(' Tasks Fetched:', res.data.list);
+      const allTasks = res.data.list || [];
 
-      setTasks(res.data.list);
+      const filteredTasks = showAll
+        ? allTasks
+        : allTasks.filter(
+            t =>
+              moment(t.created_at).format('YYYY-MM-DD') ===
+              moment().format('YYYY-MM-DD'),
+          );
+
+      setTasks(filteredTasks);
     } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Failed to fetch tasks');
+      console.error('Tasks error', err);
     }
   };
 
@@ -64,15 +72,31 @@ const TaskList = () => {
     }
   };
 
-  // 🔥 Function to reorder tasks
-  const onItemReorder = (fromIndex, toIndex) => {
+  const onItemReorder = async ({ fromIndex, toIndex }) => {
     const updatedTasks = [...tasks];
     const movedItem = updatedTasks.splice(fromIndex, 1)[0];
     updatedTasks.splice(toIndex, 0, movedItem);
     setTasks(updatedTasks);
 
-    // ✅ Optionally update backend order
-    // axios.put(`${BASE_URL}/api/tasks/reorder`, { tasks: updatedTasks });
+    try {
+      const reorderedPayload = updatedTasks.map((task, index) => ({
+        task_id: task.task_id,
+        priority: index + 1,
+      }));
+
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(
+        `${BASE_URL}/api/tasks/update-priority`,
+        { tasks: reorderedPayload },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      Alert.alert('Success', 'Task order updated successfully');
+    } catch (err) {
+      console.error('Failed to update task order', err);
+      Alert.alert('Error', 'Failed to update task order');
+      fetchTasks(showAll);
+    }
   };
 
   const renderTask = ({ item }) => (
@@ -157,6 +181,16 @@ const TaskList = () => {
         </TouchableOpacity>
         <Text style={styles.title}>My Tasks</Text>
         <TouchableOpacity
+          style={{ marginRight: 12 }}
+          onPress={() => setShowAll(prev => !prev)}
+        >
+          <Icon
+            name={showAll ? 'toggle' : 'toggle-outline'}
+            size={30}
+            color={showAll ? 'red' : '#888'}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate('AddTasks')}
         >
@@ -169,8 +203,12 @@ const TaskList = () => {
         <DraxList
           data={tasks}
           renderItemContent={renderTask}
-          onItemReorder={onItemReorder}
           keyExtractor={item => item.task_id.toString()}
+          reorderable={true}
+          onItemReorder={onItemReorder}
+          scrollEnabled={true}
+          itemAnimator={{ type: 'scale', spring: true }}
+          dragPayload={item => item}
         />
       </DraxProvider>
     </View>
@@ -178,7 +216,7 @@ const TaskList = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ff883a', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#ffeee6', paddingTop: 50 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -195,8 +233,9 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 15,
     elevation: 3,
-    marginHorizontal: 15,
+    marginHorizontal: 20,
   },
+
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

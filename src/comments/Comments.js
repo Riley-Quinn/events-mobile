@@ -128,11 +128,13 @@ const CommentBox = ({ module, moduleId }) => {
       <View style={styles.inputContainer}>
         <TextInput
           placeholder="Write your comment..."
+          placeholderTextColor="#000"
           value={comment}
           onChangeText={setComment}
           style={styles.input}
           multiline
         />
+
         <View style={styles.actions}>
           <TouchableOpacity style={styles.postButton} onPress={handleSubmit}>
             <Text style={styles.postButtonText}>Post</Text>
@@ -157,9 +159,15 @@ export default CommentBox;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    marginTop: 20,
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
     backgroundColor: '#fff',
-    padding: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   title: {
     fontSize: 20,
@@ -169,11 +177,11 @@ const styles = StyleSheet.create({
   },
   commentList: {
     flex: 1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   commentContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -192,7 +200,8 @@ const styles = StyleSheet.create({
   commentText: {
     marginTop: 2,
     fontSize: 16,
-    color: '#000',
+    fontWeight: 'bold',
+    color: 'red',
   },
   inputContainer: {
     borderTopWidth: 1,
@@ -200,7 +209,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   input: {
-    borderColor: '#ccc',
+    borderColor: 'black',
     borderWidth: 1,
     borderRadius: 6,
     padding: 8,
@@ -217,9 +226,10 @@ const styles = StyleSheet.create({
   },
   postButton: {
     backgroundColor: '#ff883a',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 20,
+    borderRadius: 10,
   },
   postButtonText: {
     color: '#fff',

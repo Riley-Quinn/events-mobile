@@ -1,13 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,24 +9,36 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BASE_URL } from '@env';
 import moment from 'moment';
 import { ability } from '../casl/ability';
+import { DraxProvider, DraxList } from 'react-native-drax';
+import { PERMISSIONS } from '../Dashboard/contextPage';
 
 const EventList = () => {
   const navigation = useNavigation();
   const [events, setEvents] = useState([]);
+  const [showAll, setShowAll] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchEvents();
-    }, []),
+      fetchEvents(showAll);
+    }, [showAll]),
   );
 
-  const fetchEvents = async () => {
+  const fetchEvents = async showAllFlag => {
     try {
       const token = await AsyncStorage.getItem('token');
       const res = await axios.get(`${BASE_URL}/api/events/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setEvents(res.data);
+      const allEvents = res.data || [];
+      if (showAllFlag) {
+        setEvents(allEvents);
+      } else {
+        const today = moment().format('YYYY-MM-DD');
+        const filteredEvents = allEvents.filter(
+          event => moment(event.date).format('YYYY-MM-DD') === today,
+        );
+        setEvents(filteredEvents);
+      }
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to fetch events');
@@ -54,6 +59,34 @@ const EventList = () => {
     }
   };
 
+  // Drag and drop reorder function
+  const onItemReorder = async ({ fromIndex, toIndex }) => {
+    const updatedEvents = [...events];
+    const movedItem = updatedEvents.splice(fromIndex, 1)[0];
+    updatedEvents.splice(toIndex, 0, movedItem);
+    setEvents(updatedEvents);
+
+    try {
+      const reorderedPayload = updatedEvents.map((item, index) => ({
+        id: item.id,
+        priority: index + 1,
+      }));
+
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(
+        `${BASE_URL}/api/events/update-priority`,
+        { events: reorderedPayload },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      Alert.alert('Success', 'Event order updated successfully');
+    } catch (err) {
+      console.error('Failed to update event order', err);
+      Alert.alert('Error', 'Failed to update event order');
+      fetchEvents(showAll);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -63,10 +96,18 @@ const EventList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
-
         <Text style={styles.title}>My Events</Text>
-
-        {ability.can('add', 'Event') && (
+        <TouchableOpacity
+          style={{ marginRight: 12 }}
+          onPress={() => setShowAll(prev => !prev)}
+        >
+          <Icon
+            name={showAll ? 'toggle' : 'toggle-outline'}
+            size={30}
+            color={showAll ? 'red' : '#888'}
+          />
+        </TouchableOpacity>
+        {PERMISSIONS.addEvent() && (
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('AddEvent')}
@@ -76,102 +117,106 @@ const EventList = () => {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.taskList}>
+      <DraxProvider>
         {events.length === 0 ? (
           <View style={styles.noEventsContainer}>
             <Text style={styles.noEventsText}>No events found</Text>
           </View>
         ) : (
-          events.map(event => (
-            <TouchableOpacity
-              key={event.id}
-              style={styles.card}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('ViewEvent', { id: event.id })}
-            >
-              <View style={styles.cardHeader}>
-                <Text
-                  style={[styles.taskTitle, { maxWidth: '75%' }]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {event.title}
-                </Text>
-
-                <View style={styles.actionIcons}>
-                  {ability.can('add', 'Event') && (
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate('EditEvent', { eventId: event.id })
-                      }
-                    >
-                      <Icon name="create-outline" size={22} color="#1976d2" />
-                    </TouchableOpacity>
-                  )}
-
-                  {ability.can('add', 'Event') && (
-                    <TouchableOpacity
-                      onPress={() =>
-                        Alert.alert('Delete Event', 'Are you sure?', [
-                          { text: 'Cancel' },
-                          {
-                            text: 'Delete',
-                            onPress: () => handleDelete(event.id),
-                            style: 'destructive',
-                          },
-                        ])
-                      }
-                      style={{ marginLeft: 12 }}
-                    >
-                      <Icon name="trash-outline" size={22} color="#ff3b30" />
-                    </TouchableOpacity>
-                  )}
+          <DraxList
+            data={events}
+            renderItemContent={({ item }) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.card}
+                activeOpacity={0.8}
+                onPress={() =>
+                  navigation.navigate('ViewEvent', { id: item.id })
+                }
+              >
+                <View style={styles.cardHeader}>
+                  <Text
+                    style={[styles.taskTitle, { maxWidth: '75%' }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.title}
+                  </Text>
+                  <View style={styles.actionIcons}>
+                    {PERMISSIONS.addEvent() && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate('EditEvent', { eventId: item.id })
+                        }
+                      >
+                        <Icon name="create-outline" size={22} color="#1976d2" />
+                      </TouchableOpacity>
+                    )}
+                    {PERMISSIONS.addEvent() && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Alert.alert('Delete Event', 'Are you sure?', [
+                            { text: 'Cancel' },
+                            {
+                              text: 'Delete',
+                              onPress: () => handleDelete(item.id),
+                              style: 'destructive',
+                            },
+                          ])
+                        }
+                        style={{ marginLeft: 12 }}
+                      >
+                        <Icon name="trash-outline" size={22} color="#ff3b30" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-
-              <View style={styles.row}>
-                <MaterialIcons name="event" size={18} color="#ff883a" />
-                <Text
-                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
-                >
-                  {moment(event.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <Icon name="time-outline" size={18} color="#ff883a" />
-                <Text
-                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
-                >
-                  {event.time === '00:00:00'
-                    ? 'All Day'
-                    : moment(event.time, 'HH:mm:ss').format('h:mm A')}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <Icon name="location-outline" size={18} color="#ff883a" />
-                <Text
-                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
-                >
-                  {event.location}
-                </Text>
-              </View>
-
-              <View style={styles.row}>
-                <MaterialIcons name="description" size={18} color="#ff883a" />
-                <Text
-                  style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {event.description}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))
+                <View style={styles.row}>
+                  <MaterialIcons name="event" size={18} color="#ff883a" />
+                  <Text
+                    style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                  >
+                    {moment(item.date, 'YYYY-MM-DD').format('MMMM D, YYYY')}
+                  </Text>
+                </View>
+                <View style={styles.row}>
+                  <Icon name="time-outline" size={18} color="#ff883a" />
+                  <Text
+                    style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                  >
+                    {item.time === '00:00:00'
+                      ? 'All Day'
+                      : moment(item.time, 'HH:mm:ss').format('h:mm A')}
+                  </Text>
+                </View>
+                <View style={styles.row}>
+                  <Icon name="location-outline" size={18} color="#ff883a" />
+                  <Text
+                    style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                  >
+                    {item.location}
+                  </Text>
+                </View>
+                <View style={styles.row}>
+                  <MaterialIcons name="description" size={18} color="#ff883a" />
+                  <Text
+                    style={[styles.label, { marginLeft: 8, marginBottom: 8 }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.description}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            onItemReorder={onItemReorder}
+            keyExtractor={item => item.id.toString()}
+            scrollEnabled={true}
+            draggingStyle={{ opacity: 0.2 }}
+            dragReleasedStyle={{ opacity: 1 }}
+          />
         )}
-      </ScrollView>
+      </DraxProvider>
     </View>
   );
 };
@@ -181,7 +226,9 @@ export default EventList;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ff883a',
+    backgroundColor: '#ffeee6',
+
+    // backgroundColor: '#ff883a',
     paddingTop: 50,
   },
   header: {
@@ -210,12 +257,14 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#ffeee6',
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
     marginBottom: 15,
+    marginHorizontal: 20,
     elevation: 3,
   },
+
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
