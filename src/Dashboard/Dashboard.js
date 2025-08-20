@@ -38,7 +38,6 @@ const DashboardScreen = () => {
   const [taskStatusCounts, setTaskStatusCounts] = useState({});
   const [pressReleaseCounts, setPressReleaseCounts] = useState({});
 
-  // NEW: Scroll ref for auto-scroll
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -239,7 +238,6 @@ const DashboardScreen = () => {
     }
   };
 
-  // NEW: Auto scroll effect
   useEffect(() => {
     if (birthdayNames.length > 1) {
       const interval = setInterval(() => {
@@ -267,10 +265,14 @@ const DashboardScreen = () => {
               style={styles.avatar}
             />
           </TouchableOpacity>
-          <View>
+          <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.roleBadge}>{roleName}</Text>
             <Text style={styles.name}>{userName}</Text>
           </View>
+
+          <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
+            <Icon name="calendar-outline" size={28} color="#000" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -286,37 +288,21 @@ const DashboardScreen = () => {
               {birthdayNames.map((name, index) => (
                 <View
                   key={index}
-                  style={[styles.birthdayCard, { width: width - 40 }]}
+                  style={[styles.birthdayCard, { width: width - 32 }]}
                 >
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}
+                  <TouchableOpacity
+                    onPress={() => shareBirthdayWishes([name])}
+                    style={styles.shareButton}
                   >
-                    <TouchableOpacity
-                      onPress={() => shareBirthdayWishes([name])}
-                      style={{ marginLeft: 8 }}
-                    >
-                      <Icon name="share-outline" size={28} color="#FF6B81" />
-                    </TouchableOpacity>
-                  </View>
+                    <Icon name="share-outline" size={24} color="#FF6B81" />
+                  </TouchableOpacity>
 
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginBottom: 8,
-                    }}
-                  >
+                  <View style={styles.birthdayContent}>
                     <FontAwesome5
                       name="birthday-cake"
-                      size={35}
+                      size={40}
                       color="#FF6B81"
-                      style={{ marginRight: 20 }}
+                      style={{ marginRight: 16 }}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.birthdayTitle}>Happy Birthday</Text>
@@ -643,8 +629,7 @@ const DashboardScreen = () => {
         ) : (
           <>
             {todayTasks.map((task, i) => {
-              const hour = moment(task.created_at).format('hh');
-              const minutesOnly = moment(task.created_at).format('mm');
+              const time = moment(task.created_at).format('hh:mm');
               const ampm = moment(task.created_at).format('A');
 
               return (
@@ -672,7 +657,6 @@ const DashboardScreen = () => {
                       right: 8,
                       backgroundColor: '#fff',
                       paddingHorizontal: 8,
-
                       borderRadius: 12,
                       height: 18,
                       justifyContent: 'center',
@@ -698,7 +682,7 @@ const DashboardScreen = () => {
                         width: 80,
                       }}
                     >
-                      {hour}:00 {ampm}
+                      {time}
                     </Text>
                     <Text
                       style={{
@@ -707,6 +691,7 @@ const DashboardScreen = () => {
                         color: '#fff',
                         flex: 1,
                       }}
+                      numberOfLines={1}
                     >
                       {task.title}
                     </Text>
@@ -727,7 +712,7 @@ const DashboardScreen = () => {
                         width: 80,
                       }}
                     >
-                      {minutesOnly} min
+                      {ampm}
                     </Text>
                     <Text
                       style={{
@@ -736,6 +721,7 @@ const DashboardScreen = () => {
                         color: '#ccc',
                         flex: 1,
                       }}
+                      numberOfLines={1}
                     >
                       {task.location}
                     </Text>
@@ -745,9 +731,8 @@ const DashboardScreen = () => {
             })}
 
             {todayEvents.map((event, i) => {
-              const hour = moment(event.created_at).format('hh');
-              const minutesOnly = moment(event.created_at).format('mm');
-              const ampm = moment(event.created_at).format('A');
+              const time = moment(event.created_at).format('hh:mm'); // full time (10:45)
+              const ampm = moment(event.created_at).format('A'); // AM or PM
 
               return (
                 <TouchableOpacity
@@ -774,7 +759,6 @@ const DashboardScreen = () => {
                       right: 8,
                       backgroundColor: '#fff',
                       paddingHorizontal: 8,
-
                       borderRadius: 12,
                       height: 18,
                       justifyContent: 'center',
@@ -800,7 +784,7 @@ const DashboardScreen = () => {
                         width: 80,
                       }}
                     >
-                      {hour}:00 {ampm}
+                      {time}
                     </Text>
                     <Text
                       style={{
@@ -809,6 +793,7 @@ const DashboardScreen = () => {
                         color: '#fff',
                         flex: 1,
                       }}
+                      numberOfLines={1}
                     >
                       {event.title}
                     </Text>
@@ -829,7 +814,7 @@ const DashboardScreen = () => {
                         width: 80,
                       }}
                     >
-                      {minutesOnly} min
+                      {ampm}
                     </Text>
                     <Text
                       style={{
@@ -838,6 +823,7 @@ const DashboardScreen = () => {
                         color: '#ccc',
                         flex: 1,
                       }}
+                      numberOfLines={1}
                     >
                       {event.location}
                     </Text>
@@ -863,8 +849,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 40,
     position: 'relative',
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
   menuButton: { position: 'absolute', top: 20, left: 20 },
-  headerContent: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 10 },
   roleBadge: {
     backgroundColor: '#FF9F70',
@@ -879,38 +870,51 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   name: { fontSize: 20, fontWeight: 'bold', color: '#000' },
-
   birthdayWrapper: {
-    marginHorizontal: 10,
     marginTop: -20,
-    paddingHorizontal: 20,
+    marginVertical: 12,
+    paddingHorizontal: 16,
   },
+
   birthdayCard: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#FF7F2A',
-    alignItems: 'center',
+    borderRadius: 16,
+    padding: 20,
+    marginRight: 10,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
     shadowRadius: 4,
+  },
+
+  shareButton: {
+    position: 'absolute',
+    top: 30,
+    right: 20,
+    backgroundColor: '#FFEDEE',
+    padding: 8,
+    borderRadius: 30,
     elevation: 3,
+  },
+
+  birthdayContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   birthdayName: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#000',
-
-    marginRight: 4,
+    marginTop: 10,
+    marginRight: 7,
   },
   birthdayRole: {
     fontSize: 12,
     color: '#666',
     fontWeight: 'bold',
-    marginTop: 6,
-    marginLeft: 10,
+    marginTop: 4,
+    marginLeft: 40,
   },
 
   birthdayTitle: { fontSize: 16, fontWeight: 'bold', color: '#000' },

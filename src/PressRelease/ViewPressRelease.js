@@ -325,8 +325,12 @@ const ViewPressRelease = ({ route, navigation }) => {
                   <Icon name="chevron-back-sharp" color="#000" size={30} />
                 </TouchableOpacity>
 
-                <Text style={styles.heading} numberOfLines={1}>
-                  {press.title}
+                <Text
+                  style={[styles.heading, { flex: 1 }]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {press.notes}
                 </Text>
               </View>
               {selectedImages.length > 0 && (
@@ -347,7 +351,6 @@ const ViewPressRelease = ({ route, navigation }) => {
                 <View style={styles.row}>
                   <Text style={styles.value}>{press.notes}</Text>
                 </View>
-
                 <View style={styles.row}>
                   <Text style={styles.label}>Assignee</Text>
                   <Text style={styles.colon}>:</Text>
@@ -596,8 +599,28 @@ const styles = StyleSheet.create({
     color: '#000',
     flexWrap: 'wrap',
   },
-  card: { padding: 15, backgroundColor: '#fff', borderRadius: 10 },
-  uploadBtn: { backgroundColor: '#ff883a', padding: 12, borderRadius: 10 },
+
+  card: {
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  uploadBtn: {
+    backgroundColor: '#ff883a',
+    padding: 12,
+    marginTop: 20,
+    marginBottom: 5,
+    borderRadius: 10,
+    alignItems: 'center',
+    width: 350,
+    alignSelf: 'center',
+  },
+
   uploadText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
   sectionTitle: { fontSize: 18, marginTop: 20, fontWeight: 'bold' },
   mediaContainer: { flexDirection: 'row', flexWrap: 'wrap' },

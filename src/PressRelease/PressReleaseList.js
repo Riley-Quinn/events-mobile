@@ -17,12 +17,11 @@ import { ability } from '../casl/ability';
 const PressReleaseList = () => {
   const navigation = useNavigation();
   const [pressRelease, setPressRelease] = useState([]);
-  const [showAll, setShowAll] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchPressRelease(showAll);
-    }, [showAll]),
+      fetchPressRelease();
+    }, []),
   );
 
   const fetchPressRelease = async showAllFlag => {
@@ -86,7 +85,7 @@ const PressReleaseList = () => {
     } catch (err) {
       console.error('Failed to update press release order', err);
       Alert.alert('Error', 'Failed to update press release order');
-      fetchPressRelease(showAll);
+      fetchPressRelease();
     }
   };
 
@@ -112,16 +111,7 @@ const PressReleaseList = () => {
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>My Press Release</Text>
-        <TouchableOpacity
-          style={{ marginRight: 12 }}
-          onPress={() => setShowAll(prev => !prev)}
-        >
-          <Icon
-            name={showAll ? 'toggle' : 'toggle-outline'}
-            size={30}
-            color={showAll ? 'red' : '#888'}
-          />
-        </TouchableOpacity>
+
         {PERMISSIONS.addEvent() && (
           <TouchableOpacity
             style={styles.addButton}
@@ -241,7 +231,7 @@ const styles = StyleSheet.create({
   addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
   taskList: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {
-    backgroundColor: '#ffeee6',
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
     marginBottom: 15,

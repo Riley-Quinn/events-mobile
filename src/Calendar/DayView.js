@@ -297,12 +297,14 @@ const DayView = () => {
       ? [
           'all',
           'birthdays',
+          'tasks',
           ...(PERMISSIONS.viewEvent ? ['events'] : []),
           'importantDays',
         ]
       : [
           'all',
           'birthdays',
+          'tasks',
           ...(PERMISSIONS.viewEvent ? ['events'] : []),
           'importantDays',
         ];
