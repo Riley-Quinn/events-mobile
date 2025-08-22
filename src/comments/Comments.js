@@ -75,7 +75,6 @@ const CommentBox = ({ module, moduleId }) => {
     return new Date(year, month - 1, day, hour, minute, second);
   };
 
-  // ✅ Custom Formatter
   const getTimeAgo = createdAt => {
     const now = new Date();
     const past = convertToISO(createdAt);
@@ -125,19 +124,20 @@ const CommentBox = ({ module, moduleId }) => {
         style={styles.commentList}
       />
 
-      <View style={styles.inputContainer}>
+      <View style={styles.divider} />
+
+      <View style={styles.commentInputCard}>
         <TextInput
           placeholder="Write your comment..."
+          placeholderTextColor="#888"
           value={comment}
           onChangeText={setComment}
-          style={styles.input}
+          style={styles.commentInput}
           multiline
         />
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.postButton} onPress={handleSubmit}>
-            <Text style={styles.postButtonText}>Post</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSubmit}>
+          <Text style={styles.sendText}>➤</Text>
+        </TouchableOpacity>
       </View>
 
       {showEmojiPicker && (
@@ -157,23 +157,30 @@ export default CommentBox;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    marginTop: 20,
+    borderColor: '#000',
+    borderWidth: 0.1,
+    borderRadius: 10,
+    padding: 20,
     backgroundColor: '#fff',
-    padding: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
     color: '#000',
+    marginHorizontal: 7,
   },
   commentList: {
     flex: 1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   commentContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -182,16 +189,20 @@ const styles = StyleSheet.create({
   username: {
     color: '#000',
     fontStyle: 'italic',
-    fontSize: 12,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   time: {
     color: '#000',
     fontStyle: 'italic',
     fontSize: 12,
+    fontWeight: 'bold',
   },
   commentText: {
-    marginTop: 2,
-    fontSize: 16,
+    marginTop: 4,
+    fontSize: 14,
+    marginHorizontal: 5,
+    fontWeight: 'bold',
     color: '#000',
   },
   inputContainer: {
@@ -200,7 +211,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   input: {
-    borderColor: '#ccc',
+    borderColor: 'black',
     borderWidth: 1,
     borderRadius: 6,
     padding: 8,
@@ -209,20 +220,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   actions: {
-    // flexDirection: 'row',
-    // justifyContent: 'space-between',
     marginTop: 6,
-    // alignItems: 'center',
     alignItems: 'flex-end',
   },
   postButton: {
     backgroundColor: '#ff883a',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 20,
+    borderRadius: 10,
   },
   postButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: '#ddd',
+    marginVertical: 10,
+  },
+  commentInputCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  commentInput: {
+    flex: 1,
+    paddingHorizontal: 10,
+    fontSize: 15,
+    color: '#000',
+  },
+  sendButton: {
+    backgroundColor: '#ff883a',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  sendText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

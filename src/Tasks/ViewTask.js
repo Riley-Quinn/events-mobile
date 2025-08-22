@@ -89,7 +89,7 @@ const ViewTask = ({ route, navigation }) => {
 
   return (
     <FlatList
-      data={[]} // No list data, just using FlatList as a scroll container
+      data={[]}
       keyExtractor={() => 'key'}
       ListHeaderComponent={
         <View style={{ backgroundColor: '#ffeee6', flex: 1 }}>
@@ -107,41 +107,45 @@ const ViewTask = ({ route, navigation }) => {
           <View style={styles.container}>
             <View style={styles.card}>
               <View style={styles.row}>
-                <Text style={styles.label}>Description: </Text>
-                <Text style={styles.descriptionText}>{task.description}</Text>
+                <Text style={styles.value}>{task.description}</Text>
               </View>
-
               <View style={styles.row}>
                 <Text style={styles.label}>Location</Text>
-                <Text style={styles.value}> : {task.location}</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text style={styles.value}>{task.location}</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>Category</Text>
-                <Text style={styles.value}> : {task.category_name}</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text style={styles.value}>{task.category_name}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Sub Category</Text>
-                <Text style={styles.value}> : {task.sub_category_name}</Text>
+                <Text style={styles.label}> SubCategory</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text style={styles.value}>{task.sub_category_name}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Assignee</Text>
-                <Text style={styles.value}> : {task.assignee_name}</Text>
+                <Text style={styles.label}> Assignee</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text style={styles.value}>{task.assignee_name}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Status</Text>
-                <Text style={styles.value}> : {task.status_name}</Text>
+                <Text style={styles.label}> Status</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text style={styles.value}>{task.status_name}</Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Estimated Date</Text>
+                <Text style={styles.label}> Estimated Date</Text>
+                <Text style={styles.colon}>:</Text>
                 <Text style={styles.value}>
-                  : {moment(task.estimated_date).format('DD MMM YYYY')}
+                  {moment(task.estimated_date).format('DD MMM YYYY')}
                 </Text>
               </View>
-
               <View style={styles.row}>
-                <Text style={styles.label}>Created At</Text>
+                <Text style={styles.label}> Created At</Text>
+                <Text style={styles.colon}>:</Text>
                 <Text style={styles.value}>
-                  : {moment(task.created_at).format('DD MMM YYYY')}
+                  {moment(task.created_at).format('DD MMM YYYY')}
                 </Text>
               </View>
             </View>
@@ -152,12 +156,14 @@ const ViewTask = ({ route, navigation }) => {
                     style={{
                       fontSize: 18,
                       fontWeight: 'bold',
-                      marginBottom: 10,
+                      marginTop: -30,
+                      marginHorizontal: 7,
                       color: '#000',
                     }}
                   >
                     Status History
                   </Text>
+                  <View style={styles.divider} />
 
                   <StepIndicator
                     customStyles={stepIndicatorStyles}
@@ -180,8 +186,7 @@ const ViewTask = ({ route, navigation }) => {
                       return (
                         <View
                           style={{
-                            paddingLeft: 12,
-                            minHeight: 70,
+                            minHeight: 30,
                             justifyContent: 'center',
                             width: '100%',
                             display: 'flex',
@@ -249,19 +254,33 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 5,
   },
+
   label: {
     fontWeight: 'bold',
     color: '#000',
-    fontSize: 18,
+    fontSize: 16,
+    width: 130,
   },
-  value: {
+  divider: {
+    height: 2,
+    backgroundColor: '#ddd',
+    marginVertical: 10,
+  },
+  colon: {
+    fontSize: 16,
     color: '#000',
-    fontSize: 18,
-    flexShrink: 1,
+    width: 10,
   },
+
+  value: {
+    flex: 1,
+    fontSize: 18,
+    color: '#000',
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -289,19 +308,8 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: 'flex-start',
   },
-  CommentBox: {
-    marginTop: 20,
-    borderColor: '#000',
-    borderWidth: 0.1,
-    borderRadius: 10,
-    padding: 20,
-    backgroundColor: '#fff',
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
   statusTracker: {
-    marginTop: 20,
+    marginTop: 10,
     borderColor: '#000',
     borderWidth: 0.1,
     borderRadius: 10,

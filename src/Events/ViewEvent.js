@@ -9,12 +9,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { BASE_URL, CLOUD_FRONT_URL } from '@env';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
@@ -28,14 +29,40 @@ const ViewEvent = ({ route, navigation }) => {
   const [uploading, setUploading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
 
+  // Request Camera Permission (Android)
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'App needs camera access to take photos and videos.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        console.log('📷 Camera Permission:', granted);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true; // iOS handled via Info.plist
+  };
+
   const fetchEvent = useCallback(async () => {
     const token = await AsyncStorage.getItem('token');
     try {
       const res = await axios.get(`${BASE_URL}/api/events/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('📥 Event API Response:', res.data);
       setEvent(res.data);
     } catch (err) {
+      console.error('❌ fetchEvent error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load event');
     }
   }, [id]);
@@ -46,8 +73,10 @@ const ViewEvent = ({ route, navigation }) => {
       const res = await axios.get(`${BASE_URL}/api/media/event/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('📥 Media API Response:', res.data);
       setMedia(res.data);
     } catch (err) {
+      console.error('❌ fetchMedia error:', err.response?.data || err.message);
       Alert.alert('Error', 'Failed to load media');
     }
   }, [id]);
@@ -62,18 +91,45 @@ const ViewEvent = ({ route, navigation }) => {
       Alert.alert('Limit Reached', 'You can only upload 4 images.');
       return;
     }
-
     launchImageLibrary(
       { mediaType: 'mixed', selectionLimit: 1 },
       async response => {
         if (response.didCancel) return;
-
         const asset = response.assets?.[0];
         if (!asset) {
           Alert.alert('Error', 'No file selected');
           return;
         }
+        console.log('📂 File selected from gallery:', asset);
+        setSelectedFile(asset);
+      },
+    );
+  };
 
+  // New Function to Capture from Camera
+  const captureFromCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Denied',
+        'Camera access is required to take photos or videos.',
+      );
+      return;
+    }
+    if (media.length >= 4) {
+      Alert.alert('Limit Reached', 'You can only upload 4 images.');
+      return;
+    }
+    launchCamera(
+      { mediaType: 'mixed', videoQuality: 'high', saveToPhotos: true },
+      response => {
+        if (response.didCancel) return;
+        const asset = response.assets?.[0];
+        if (!asset) {
+          Alert.alert('Error', 'No file captured');
+          return;
+        }
+        console.log('📷 File captured from camera:', asset);
         setSelectedFile(asset);
       },
     );
@@ -84,6 +140,7 @@ const ViewEvent = ({ route, navigation }) => {
       Alert.alert('No file selected');
       return;
     }
+    console.log('📤 Uploading File:', selectedFile);
 
     const token = await AsyncStorage.getItem('token');
     const formData = new FormData();
@@ -99,15 +156,21 @@ const ViewEvent = ({ route, navigation }) => {
 
     try {
       setUploading(true);
-      await axios.post(`${BASE_URL}/api/media/upload/${id}`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
+      const res = await axios.post(
+        `${BASE_URL}/api/media/upload/${id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
         },
-      });
+      );
+      console.log('✅ Upload Response:', res.data);
       setSelectedFile(null);
       fetchMedia();
     } catch (err) {
+      console.error('❌ Upload error:', err.response?.data || err.message);
       Alert.alert('Upload Failed', 'Something went wrong');
     } finally {
       setUploading(false);
@@ -126,11 +189,19 @@ const ViewEvent = ({ route, navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${BASE_URL}/api/media/${mediaId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await axios.delete(
+                `${BASE_URL}/api/media/${mediaId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              );
+              console.log('🗑️ Delete Response:', res.data);
               fetchMedia();
             } catch (err) {
+              console.error(
+                '❌ Delete error:',
+                err.response?.data || err.message,
+              );
               Alert.alert('Error', 'Delete failed');
             }
           },
@@ -146,38 +217,39 @@ const ViewEvent = ({ route, navigation }) => {
       Alert.alert('No Images Selected', 'Please select images to share.');
       return;
     }
-
     try {
       const downloadedPaths = [];
-
       for (let img of selectedImages) {
         const imageUrl = getFileUrl(img.url);
         const localPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${
           img.id
         }.jpg`;
+        console.log('⬇️ Downloading for share:', imageUrl, '→', localPath);
         await RNFS.downloadFile({ fromUrl: imageUrl, toFile: localPath })
           .promise;
         downloadedPaths.push('file://' + localPath);
       }
-
-      await Share.open({
-        urls: downloadedPaths,
-        type: 'image/jpeg',
-      });
-    } catch (err) {}
+      console.log('📤 Sharing Images:', downloadedPaths);
+      await Share.open({ urls: downloadedPaths, type: 'image/jpeg' });
+    } catch (err) {
+      console.error('❌ Share error:', err.message);
+    }
   };
 
   const toggleSelectImage = item => {
     const alreadySelected = selectedImages.find(img => img.id === item.id);
     if (alreadySelected) {
       setSelectedImages(selectedImages.filter(img => img.id !== item.id));
+      console.log('❌ Deselected Image:', item);
     } else {
       setSelectedImages([...selectedImages, item]);
+      console.log('✅ Selected Image:', item);
     }
   };
 
   const renderMedia = item => {
     const fileUrl = getFileUrl(item.url);
+    console.log('🎨 Rendering Media:', item);
     const isVideo = /\.(mp4|webm|ogg)$/i.test(item.url);
     const isSelected = selectedImages.some(img => img.id === item.id);
 
@@ -198,7 +270,9 @@ const ViewEvent = ({ route, navigation }) => {
           <Image
             source={{ uri: fileUrl }}
             style={styles.mediaThumb}
-            onError={() => {}}
+            onError={e =>
+              console.error('🚨 Image Load Error:', fileUrl, e.nativeEvent)
+            }
           />
         )}
 
@@ -230,9 +304,7 @@ const ViewEvent = ({ route, navigation }) => {
         >
           <Icon name="chevron-back-sharp" color="#000" size={30} />
         </TouchableOpacity>
-
         <Text style={styles.heading}>{event.title}</Text>
-
         <View
           style={{
             flexDirection: 'row',
@@ -246,7 +318,6 @@ const ViewEvent = ({ route, navigation }) => {
           >
             <Icon name="share-social" size={30} color="#000" />
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => navigation.navigate('AddPressRelease')}
           >
@@ -257,28 +328,28 @@ const ViewEvent = ({ route, navigation }) => {
 
       <View style={styles.container}>
         <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.label}>Description: </Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
+          <View style={{ marginBottom: 10 }}>
+            <Text style={styles.value}>{event.description}</Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Location</Text>
-            <Text style={styles.value}> : {event.location}</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.value}>{event.location}</Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Date</Text>
+            <Text style={styles.colon}>:</Text>
             <Text style={styles.value}>
-              {' '}
-              : {moment(event.date).format('DD MMM YYYY')}
+              {moment(event.date).format('DD MMM YYYY')}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Text style={styles.label}>Time</Text>
+            <Text style={styles.colon}>:</Text>
             <Text style={styles.value}>
-              :{' '}
               {event.time === '00:00:00'
                 ? 'All Day'
                 : moment(event.time, 'HH:mm:ss').format('hh:mm A')}
@@ -288,7 +359,16 @@ const ViewEvent = ({ route, navigation }) => {
 
         <View style={{ marginTop: 20 }}>
           <TouchableOpacity style={styles.uploadBtn} onPress={selectFile}>
-            <Text style={styles.uploadText}>Choose File</Text>
+            <Text style={styles.uploadText}>Choose from Gallery</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.uploadBtn,
+              { backgroundColor: '#007bff', marginTop: 10 },
+            ]}
+            onPress={captureFromCamera}
+          >
+            <Text style={styles.uploadText}>Capture from Camera</Text>
           </TouchableOpacity>
 
           {selectedFile && (
@@ -358,10 +438,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  row: { flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' },
-  label: { fontWeight: 'bold', color: '#000', fontSize: 18 },
-  value: { color: '#000', fontSize: 18, flexShrink: 1 },
-  descriptionText: { fontSize: 16, color: '#000', marginTop: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  label: { fontWeight: 'bold', color: '#000', fontSize: 16, width: 100 },
+  colon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginHorizontal: 5,
+  },
+  value: { flex: 1, fontSize: 16, color: '#000', flexWrap: 'wrap' },
+  descriptionText: { fontSize: 16, color: '#000', marginTop: -20 },
   uploadBtn: {
     backgroundColor: '#ff883a',
     padding: 12,
@@ -372,6 +458,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     marginTop: 24,
+    marginHorizontal: 10,
     marginBottom: 10,
     color: '#000',
     fontWeight: 'bold',

@@ -5,6 +5,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import axios from 'axios';
+import moment from 'moment';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
@@ -13,28 +15,34 @@ import { DraxProvider, DraxList } from 'react-native-drax';
 const TaskList = () => {
   const navigation = useNavigation();
   const [tasks, setTasks] = useState([]);
+  const [showAll, setShowAll] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchTasks();
-    }, []),
+      fetchTasks(showAll);
+    }, [showAll]),
   );
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (showAll = false) => {
     try {
-      console.log(' Token:', token);
-
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/tasks?all=true`, {
+      const res = await axios.get(`${BASE_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log(' Tasks Fetched:', res.data.list);
+      const allTasks = res.data.list || [];
 
-      setTasks(res.data.list);
+      const filteredTasks = showAll
+        ? allTasks
+        : allTasks.filter(
+            t =>
+              moment(t.created_at).format('YYYY-MM-DD') ===
+              moment().format('YYYY-MM-DD'),
+          );
+
+      setTasks(filteredTasks);
     } catch (err) {
-      console.error(err);
-      Alert.alert('Error', 'Failed to fetch tasks');
+      console.error('Tasks error', err);
     }
   };
 
@@ -64,15 +72,31 @@ const TaskList = () => {
     }
   };
 
-  // 🔥 Function to reorder tasks
-  const onItemReorder = (fromIndex, toIndex) => {
+  const onItemReorder = async ({ fromIndex, toIndex }) => {
     const updatedTasks = [...tasks];
     const movedItem = updatedTasks.splice(fromIndex, 1)[0];
     updatedTasks.splice(toIndex, 0, movedItem);
     setTasks(updatedTasks);
 
-    // ✅ Optionally update backend order
-    // axios.put(`${BASE_URL}/api/tasks/reorder`, { tasks: updatedTasks });
+    try {
+      const reorderedPayload = updatedTasks.map((task, index) => ({
+        task_id: task.task_id,
+        priority: index + 1,
+      }));
+
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(
+        `${BASE_URL}/api/tasks/update-priority`,
+        { tasks: reorderedPayload },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      Alert.alert('Success', 'Task order updated successfully');
+    } catch (err) {
+      console.error('Failed to update task order', err);
+      Alert.alert('Error', 'Failed to update task order');
+      fetchTasks(showAll);
+    }
   };
 
   const renderTask = ({ item }) => (
@@ -147,7 +171,8 @@ const TaskList = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      <View style={styles.headerBackground} />
+
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -155,55 +180,119 @@ const TaskList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
+
         <Text style={styles.title}>My Tasks</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddTasks')}
-        >
-          <Icon name="add-circle" size={30} color="#ff883a" />
-        </TouchableOpacity>
+
+        <View style={styles.rightIcons}>
+          <TouchableOpacity
+            style={{ marginRight: 15 }}
+            onPress={() => setShowAll(prev => !prev)}
+          >
+            <Icon
+              name={showAll ? 'toggle' : 'toggle-outline'}
+              size={30}
+              color={showAll ? 'red' : '#000'}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('AddTasks')}>
+            <Icon name="add-circle" size={30} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* 🔥 Drax Drag & Drop List */}
-      <DraxProvider>
-        <DraxList
-          data={tasks}
-          renderItemContent={renderTask}
-          onItemReorder={onItemReorder}
-          keyExtractor={item => item.task_id.toString()}
-        />
-      </DraxProvider>
+      <View style={{ flex: 1 }}>
+        <DraxProvider>
+          {tasks.length === 0 ? (
+            <View style={styles.noEventsContainer}>
+              <Text style={styles.noEventsText}>No Tasks Today</Text>
+            </View>
+          ) : (
+            <DraxList
+              data={tasks}
+              renderItemContent={renderTask}
+              keyExtractor={item => item.task_id.toString()}
+              reorderable={true}
+              onItemReorder={onItemReorder}
+              scrollEnabled={true}
+              itemAnimator={{ type: 'scale', spring: true }}
+              dragPayload={item => item}
+              contentContainerStyle={{ paddingTop: 20 }}
+            />
+          )}
+        </DraxProvider>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ff883a', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
+
+  headerBackground: {
+    backgroundColor: '#ff883a',
+    height: 120,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingVertical: 15,
+    marginTop: 40,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
   },
   backButton: { padding: 5, marginRight: 10 },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#000' },
-  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
+  rightIcons: { flexDirection: 'row', alignItems: 'center' },
+
   card: {
-    backgroundColor: '#ffeee6',
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 10,
     elevation: 3,
-    marginHorizontal: 15,
+    marginHorizontal: 20,
+    marginTop: 20,
   },
+
+  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
+
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  taskTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 10,
+  },
+  noEventsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 300,
+  },
+  noEventsText: {
+    fontSize: 20,
+    color: '#000',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   actionIcons: { flexDirection: 'row' },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   label: { fontSize: 14, color: '#555', marginLeft: 8 },

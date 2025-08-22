@@ -1,13 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -15,6 +8,10 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
+import moment from 'moment';
+import { DraxProvider, DraxList } from 'react-native-drax';
+import { PERMISSIONS } from '../Dashboard/contextPage';
+
 import { ability } from '../casl/ability';
 
 const PressReleaseList = () => {
@@ -27,16 +24,26 @@ const PressReleaseList = () => {
     }, []),
   );
 
-  const fetchPressRelease = async () => {
+  const fetchPressRelease = async showAllFlag => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/press-release/`, {
+      const res = await axios.get(`${BASE_URL}/api/press-release`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPressRelease(res.data);
+      const allPressRelease = res.data;
+
+      if (showAllFlag) {
+        setPressRelease(allPressRelease);
+      } else {
+        const today = moment().format('YYYY-MM-DD');
+        const filteredPressRelease = allPressRelease.filter(
+          event => moment(event.date).format('YYYY-MM-DD') === today,
+        );
+        setPressRelease(filteredPressRelease);
+      }
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch Press Release');
+      Alert.alert('Error', 'Failed to fetch pressRelease');
     }
   };
 
@@ -51,6 +58,33 @@ const PressReleaseList = () => {
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to delete Press Release');
+    }
+  };
+
+  const onItemReorder = async ({ fromIndex, toIndex }) => {
+    const updatedPress = [...pressRelease];
+    const movedItem = updatedPress.splice(fromIndex, 1)[0];
+    updatedPress.splice(toIndex, 0, movedItem);
+    setPressRelease(updatedPress);
+
+    try {
+      const reorderedPayload = updatedPress.map((item, index) => ({
+        press_id: item.press_id,
+        priority: index + 1,
+      }));
+
+      const token = await AsyncStorage.getItem('token');
+      await axios.post(
+        `${BASE_URL}/api/press-release/update-priority`,
+        { presses: reorderedPayload },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      Alert.alert('Success', 'Press release order updated successfully');
+    } catch (err) {
+      console.error('Failed to update press release order', err);
+      Alert.alert('Error', 'Failed to update press release order');
+      fetchPressRelease();
     }
   };
 
@@ -75,126 +109,159 @@ const PressReleaseList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Press Release</Text>
+        <Text style={styles.title}>My PressRelease</Text>
 
-        {ability.can('add', 'Event') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddPressRelease')}
-          >
-            <Icon name="add-circle" size={30} color="#ff883a" />
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {PERMISSIONS.addEvent() && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddEvent')}
+            >
+              <Icon name="add-circle" size={30} color="#ff883a" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.taskList}>
-        {pressRelease.map(pressrelease => (
-          <TouchableOpacity
-            key={pressrelease.press_id}
-            style={styles.card}
-            onPress={() =>
-              navigation.navigate('ViewPressRelease', {
-                id: pressrelease.press_id,
-              })
-            }
-          >
-            <View style={styles.cardHeader}>
-              <Text style={styles.taskTitle}>{pressrelease.title}</Text>
-              <View style={styles.actionIcons}>
-                {ability.can('add', 'Event') && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('EditPressRelease', {
-                        pressId: pressrelease.press_id,
-                      })
-                    }
+      <DraxProvider>
+        <DraxList
+          data={pressRelease}
+          renderItemContent={({ item }) => (
+            <TouchableOpacity
+              key={item.press_id}
+              style={styles.card}
+              onPress={() =>
+                navigation.navigate('ViewPressRelease', {
+                  id: item.press_id,
+                })
+              }
+            >
+              <View style={styles.cardHeader}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text
+                    style={styles.taskTitle}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    <Icon name="create-outline" size={22} color="#1976d2" />
-                  </TouchableOpacity>
-                )}
+                    {item.title}
+                  </Text>
+                </View>
 
-                {ability.can('add', 'Event') && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      Alert.alert(
-                        'Delete Press Release',
-                        'Are you sure you want to delete this Press Release?',
-                        [
-                          { text: 'Cancel' },
-                          {
-                            text: 'Delete',
-                            onPress: () => handleDelete(pressrelease.press_id),
-                            style: 'destructive',
-                          },
-                        ],
-                      )
-                    }
-                    style={{ marginLeft: 12 }}
-                  >
-                    <Icon name="trash-outline" size={22} color="#ff3b30" />
-                  </TouchableOpacity>
-                )}
+                <View style={styles.actionIcons}>
+                  {PERMISSIONS.addEvent() && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate('EditPressRelease', {
+                          pressId: item.press_id,
+                        })
+                      }
+                    >
+                      <Icon name="create-outline" size={22} color="#1976d2" />
+                    </TouchableOpacity>
+                  )}
+
+                  {PERMISSIONS.addEvent() && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert(
+                          'Delete Press Release',
+                          'Are you sure you want to delete this Press Release?',
+                          [
+                            { text: 'Cancel' },
+                            {
+                              text: 'Delete',
+                              onPress: () => handleDelete(item.press_id),
+                              style: 'destructive',
+                            },
+                          ],
+                        )
+                      }
+                      style={{ marginLeft: 12 }}
+                    >
+                      <Icon name="trash-outline" size={22} color="#ff3b30" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
 
-            <View style={styles.row}>
-              <MaterialIcons name="notes" size={18} color="#ff883a" />
-              <Text
-                style={[styles.label, { flex: 1 }]}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {pressrelease.notes}
-              </Text>
-            </View>
+              <View style={styles.row}>
+                <View style={{ marginTop: 2 }}>
+                  <MaterialIcons name="notes" size={18} color="#ff883a" />
+                </View>
+                <Text style={[styles.label, { flex: 1 }]}>{item.notes}</Text>
+              </View>
 
-            <View style={styles.row}>
-              <FontAwesome5 name="user-circle" size={18} color="#ff883a" />
-              <Text style={styles.label}> {pressrelease.assignee_name}</Text>
-            </View>
+              <View style={styles.row}>
+                <FontAwesome5 name="user-circle" size={18} color="#ff883a" />
+                <Text
+                  style={[styles.label, { flex: 1 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.assignee_name}
+                </Text>
+              </View>
 
-            <View style={styles.row}>
-              <MaterialIcons
-                name="pending-actions"
-                size={18}
-                color={getStatusColor(pressrelease.status_name)}
-              />
-              <Text
-                style={[
-                  styles.status,
-                  { color: getStatusColor(pressrelease.status_name) },
-                ]}
-              >
-                {pressrelease.status_name}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <View style={styles.row}>
+                <MaterialIcons
+                  name="pending-actions"
+                  size={18}
+                  color={getStatusColor(item.status_name)}
+                />
+                <Text
+                  style={[
+                    styles.status,
+                    { color: getStatusColor(item.status_name) },
+                  ]}
+                >
+                  {item.status_name}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          onItemReorder={onItemReorder}
+          keyExtractor={item => item.press_id.toString()}
+          scrollEnabled={true}
+          draggingStyle={{ opacity: 0.2 }}
+          dragReleasedStyle={{ opacity: 1 }}
+        />
+      </DraxProvider>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ff883a', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    backgroundColor: '#ff883a',
+    paddingBottom: 15,
+    paddingTop: 60,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
+  addButton: {
+    backgroundColor: '#ffeee6',
+    padding: 10,
+    borderRadius: 50,
+  },
+
   backButton: { padding: 5, marginRight: 10 },
   title: { fontSize: 26, fontWeight: 'bold', color: '#000' },
-  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
   taskList: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {
-    backgroundColor: '#ffeee6',
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 10,
+    marginTop: 30,
+    marginHorizontal: 20,
     elevation: 3,
   },
+
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -203,8 +270,19 @@ const styles = StyleSheet.create({
   },
   taskTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
   actionIcons: { flexDirection: 'row' },
-  row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  label: { fontSize: 15, color: '#000', marginLeft: 8 },
+  row: {
+    flexDirection: 'row',
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+
+  label: {
+    fontSize: 15,
+    color: '#000',
+    marginLeft: 8,
+    flexShrink: 1,
+  },
+
   status: { fontSize: 15, fontWeight: 'bold', marginTop: 5, marginLeft: 8 },
 });
 

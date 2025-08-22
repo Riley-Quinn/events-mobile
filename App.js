@@ -32,9 +32,7 @@ import { Alert, PermissionsAndroid, Platform } from 'react-native';
 const Stack = createNativeStackNavigator();
 
 // 🔴 Background FCM handler (outside component)
-messaging().setBackgroundMessageHandler(async remoteMessage => {
-  console.log('📩 Background FCM:', remoteMessage);
-});
+messaging().setBackgroundMessageHandler(async remoteMessage => {});
 
 export default function App() {
   useEffect(() => {

@@ -23,10 +23,10 @@ import { Alert } from 'react-native';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const COLORS = {
-  birthdays: '#e3d1ff',
-  events: '#d6ffea',
-  importantDays: '#ffe3bc',
-  tasks: '#ff7f7f',
+  birthdays: '#FF6B81',
+  events: '#1ABC9C',
+  importantDays: '#F8C471',
+  tasks: '#4A90E2',
 };
 
 const MonthView = () => {
@@ -38,15 +38,13 @@ const MonthView = () => {
     importantDays: [],
     tasks: [],
   });
-  const formattedDisplayDate = moment(currentDate).format('D,MMMM YYYY');
+  const formattedDisplayDate = moment(currentDate).format('D MMMM YYYY');
 
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  // Birthday Edit
   const [editBirthday, setEditBirthday] = useState(null);
-  // Important Day Edit
   const [editImportantDay, setEditImportantDay] = useState(null);
 
   useEffect(() => {
@@ -146,14 +144,13 @@ const MonthView = () => {
         marks[date] = { marked: true, dots: [] };
       }
       marks[date].dots.push({
-        color: '#000', // All dots black
-        selectedDotColor: '#fff',
+        color: '#000',
+        selectedDotColor: 'blue',
       });
     };
 
     const daysInMonth = moment(visibleMonth, 'YYYY-MM').daysInMonth();
 
-    // Birthdays (recurring)
     allData.birthdays.forEach(item => {
       const birthdayMMDD = moment(item.birth_date).format('MM-DD');
       for (let d = 1; d <= daysInMonth; d++) {
@@ -164,23 +161,20 @@ const MonthView = () => {
       }
     });
 
-    // Events
     allData.events.forEach(item => {
       const date = moment(item.date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'events');
     });
-    //tasks
+
     allData.tasks.forEach(item => {
       const date = moment(item.start_date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'events');
     });
-    // Important Days
     allData.importantDays.forEach(item => {
       const date = moment(item.importantDay_date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'importantDays');
     });
 
-    // Selected date
     if (currentDate) {
       marks[currentDate] = {
         ...(marks[currentDate] || {}),
@@ -193,7 +187,6 @@ const MonthView = () => {
     return marks;
   }, [allData, visibleMonth, currentDate]);
 
-  // Handle Birthday Update/Delete
   const updateBirthday = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -305,7 +298,7 @@ const MonthView = () => {
           markedDates={markedDates}
           markingType={'multi-dot'}
           theme={{
-            calendarBackground: '#ffeee6',
+            calendarBackground: '#fff',
             selectedDayBackgroundColor: '#ff883a',
             selectedDayTextColor: '#fff',
             todayTextColor: '#ff883a',
@@ -329,7 +322,13 @@ const MonthView = () => {
         />
       ) : (
         <View style={styles.eventList}>
-          <Text style={styles.heading}>Events on {formattedDisplayDate}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.heading}>All schedules</Text>
+            <Text style={[styles.heading, { marginLeft: 10 }]}>
+              {formattedDisplayDate}
+            </Text>
+          </View>
+
           <FlatList
             data={filteredEvents}
             keyExtractor={(item, index) => index.toString()}
@@ -366,24 +365,56 @@ const MonthView = () => {
                     { backgroundColor: COLORS[item.category] },
                   ]}
                 >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      backgroundColor:
+                        item.category === 'birthdays'
+                          ? '#fff'
+                          : item.category === 'tasks'
+                          ? '#fff'
+                          : item.category === 'importantDays'
+                          ? '#fff'
+                          : '#fff',
+                      borderRadius: 12,
+                      paddingHorizontal: 10,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        color:
+                          item.category === 'birthdays'
+                            ? '#FF6B6B'
+                            : item.category === 'tasks'
+                            ? '#4A90E2'
+                            : item.category === 'importantDays'
+                            ? '#F8C471'
+                            : '#1ABC9C',
+                      }}
+                    >
+                      {item.category === 'birthdays'
+                        ? 'Birthday'
+                        : item.category === 'tasks'
+                        ? 'Task'
+                        : item.category === 'importantDays'
+                        ? 'ImportantDay'
+                        : 'Event'}
+                    </Text>
+                  </View>
+
                   <View style={styles.eventRow}>
                     <Text style={styles.eventText}>
                       {item.category === 'birthdays'
-                        ? `${item.name}'s Birthday `
+                        ? `${item.name}'s Birthday`
                         : item.category === 'importantDays'
-                        ? ` ${item.title}`
+                        ? item.title
                         : item.title}
                     </Text>
-
-                    {item.category === 'birthdays' ? (
-                      <Text style={styles.emoji}>🎉</Text>
-                    ) : item.category === 'importantDays' ? (
-                      <Text style={styles.emoji}>🔔</Text>
-                    ) : item.category === 'tasks' ? (
-                      <Text style={styles.emoji}>⭐</Text>
-                    ) : (
-                      <Icons name="arrow-right-circle" size={50} color="#000" />
-                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -475,7 +506,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     flex: 1,
-    backgroundColor: '#ff883a',
+    backgroundColor: '#ffeee6',
   },
   heading: {
     fontSize: 16,
@@ -490,14 +521,14 @@ const styles = StyleSheet.create({
   },
   noEvent: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 20 },
   eventCard: {
-    minHeight: 60,
+    minHeight: 50,
     borderRadius: 8,
     marginBottom: 15,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
-  eventText: { fontSize: 14, color: '#000', fontWeight: 'bold' },
+  eventText: { fontSize: 14, color: '#fff', fontWeight: 'bold' },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -557,10 +588,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-  },
-
-  emoji: {
-    fontSize: 40, // make emoji bigger
   },
 
   arrow: {

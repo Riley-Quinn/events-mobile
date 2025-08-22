@@ -29,7 +29,7 @@ const Profile = () => {
       <View style={styles.circleWrapper}>
         <View style={styles.circle}>
           <Image
-            source={require('../../assets/Profile.png')}
+            source={require('../../assets/Profile.jpeg')}
             style={styles.image}
           />
         </View>
@@ -97,7 +97,7 @@ const Profile = () => {
 
         <View style={styles.imageRow}>
           <Image
-            source={require('../../assets/1.png')}
+            source={require('../../assets/1.jpeg')}
             style={styles.gridImage}
           />
           <Image
@@ -107,11 +107,11 @@ const Profile = () => {
         </View>
         <View style={styles.imageRow}>
           <Image
-            source={require('../../assets/3.png')}
+            source={require('../../assets/3.jpeg')}
             style={styles.gridImage}
           />
           <Image
-            source={require('../../assets/4.png')}
+            source={require('../../assets/4.jpeg')}
             style={styles.gridImage}
           />
         </View>
