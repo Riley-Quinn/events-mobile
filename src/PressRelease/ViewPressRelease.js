@@ -622,7 +622,13 @@ const styles = StyleSheet.create({
   },
 
   uploadText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
-  sectionTitle: { fontSize: 18, marginTop: 20, fontWeight: 'bold' },
+  sectionTitle: {
+    fontSize: 18,
+    marginTop: 20,
+    fontWeight: 'bold',
+    color: '#000',
+    marginHorizontal: 10,
+  },
   mediaContainer: { flexDirection: 'row', flexWrap: 'wrap' },
   mediaBox: { width: 110, height: 110, margin: 6, position: 'relative' },
   mediaThumb: { width: '100%', height: '100%', borderRadius: 8 },
@@ -695,18 +701,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
-
-  // CommentBox: {
-  //   marginTop: 10,
-  //   borderColor: '#000',
-  //   borderWidth: 0.1,
-  //   borderRadius: 10,
-  //   padding: 10,
-  //   backgroundColor: '#fff',
-  //   shadowOpacity: 0.25,
-  //   shadowRadius: 3.84,
-  //   elevation: 5,
-  // },
+  CommentBox: {
+    marginHorizontal: 20,
+    marginTop: -10,
+  },
 });
 
 export default ViewPressRelease;

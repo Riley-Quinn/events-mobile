@@ -293,24 +293,20 @@ const DayView = () => {
   const renderTabs = () => {
     const { birthdays, events, tasks, importantDays } = getFilteredItems();
 
-    const tabs = tabTouched
-      ? [
-          'all',
-          'birthdays',
-          'tasks',
-          ...(PERMISSIONS.viewEvent ? ['events'] : []),
-          'importantDays',
-        ]
-      : [
-          'all',
-          'birthdays',
-          'tasks',
-          ...(PERMISSIONS.viewEvent ? ['events'] : []),
-          'importantDays',
-        ];
+    const tabs = [
+      'all',
+      'birthdays',
+      'tasks',
+      ...(PERMISSIONS.viewEvent ? ['events'] : []),
+      'importantDays',
+    ];
 
     return (
-      <View style={styles.tabContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabScrollContainer}
+      >
         {tabs.map(tab => {
           const isActive =
             (selectedTab === null && tab === 'all') || selectedTab === tab;
@@ -360,7 +356,11 @@ const DayView = () => {
                     }}
                   >
                     <Text
-                      style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}
+                      style={{
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: '600',
+                      }}
                     >
                       {count}
                     </Text>
@@ -371,7 +371,7 @@ const DayView = () => {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
     );
   };
 
@@ -457,7 +457,10 @@ const DayView = () => {
   return (
     <View style={styles.container}>
       <View style={{ position: 'absolute', left: 10, top: 45, zIndex: 999 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginBottom: 30 }}
+        >
           <Icon name="chevron-back" size={26} color="#000" />
         </TouchableOpacity>
       </View>
@@ -614,37 +617,6 @@ const DayView = () => {
                 <Text style={styles.optionText}>Add PressNote</Text>
               </TouchableOpacity>
             )}
-
-            {/* {[
-              'Add Birthday',
-              'Add Important Day',
-              'Add Event',
-              'Add Task',
-              'Add PressNote',
-            ].map(text => (
-              <TouchableOpacity
-                key={text}
-                style={styles.optionBtn}
-                onPress={() => {
-                  setShowOptionsModal(false);
-                  if (text === 'Add Event') {
-                    navigation.navigate('AddEvent');
-                  } else if (text === 'Add Birthday') {
-                    setShowBirthdayModal(true);
-                  } else if (text === 'Add Important Day') {
-                    setShowImportantDayModal(true);
-                  } else if (text === 'Add Task') {
-                    navigation.navigate('AddTasks');
-                  } else if (text === 'Add PressNote') {
-                    navigation.navigate('AddPressRelease');
-                  } else {
-                    console.error('error');
-                  }
-                }}
-              >
-                <Text style={styles.optionText}>{text}</Text>
-              </TouchableOpacity>
-            ))} */}
           </View>
         </Pressable>
       </Modal>
@@ -1031,7 +1003,7 @@ const DayView = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9f9f9' },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
   header: {
     paddingTop: 10,
     alignItems: 'center',
@@ -1039,6 +1011,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     borderBottomWidth: 1,
   },
+  tabScrollContainer: {
+    paddingHorizontal: 10,
+  },
+
   divider: {
     marginHorizontal: 8,
     color: '#888',
@@ -1054,6 +1030,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 5,
+    marginBottom: 30,
     marginVertical: 5,
   },
 
@@ -1070,7 +1047,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#222',
     fontWeight: 'bold',
-    marginTop: 2,
+    marginBottom: 10,
+    marginTop: 10,
   },
 
   timelineContainer: {

@@ -45,7 +45,6 @@ const LoginScreen = () => {
       });
 
       const { token, permissions, user } = response.data;
-      console.log('response', response?.data);
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('userName', user.name);
       await AsyncStorage.setItem('userId', String(user.id));
@@ -53,8 +52,6 @@ const LoginScreen = () => {
       await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
       updateAbility(permissions);
 
-      // ✅ FCM token registration
-      // ✅ Ask push notification permission (Android 13+)
       const hasPermission = await requestNotificationPermission();
 
       if (hasPermission) {

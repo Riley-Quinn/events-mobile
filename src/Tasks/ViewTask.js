@@ -156,12 +156,14 @@ const ViewTask = ({ route, navigation }) => {
                     style={{
                       fontSize: 18,
                       fontWeight: 'bold',
-                      marginBottom: 10,
+                      marginTop: -30,
+                      marginHorizontal: 7,
                       color: '#000',
                     }}
                   >
                     Status History
                   </Text>
+                  <View style={styles.divider} />
 
                   <StepIndicator
                     customStyles={stepIndicatorStyles}
@@ -184,8 +186,7 @@ const ViewTask = ({ route, navigation }) => {
                       return (
                         <View
                           style={{
-                            paddingLeft: 12,
-                            minHeight: 70,
+                            minHeight: 30,
                             justifyContent: 'center',
                             width: '100%',
                             display: 'flex',
@@ -263,7 +264,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     width: 130,
   },
-
+  divider: {
+    height: 2,
+    backgroundColor: '#ddd',
+    marginVertical: 10,
+  },
   colon: {
     fontSize: 16,
     color: '#000',
@@ -303,19 +308,8 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: 'flex-start',
   },
-  // CommentBox: {
-  //   marginTop: 20,
-  //   borderColor: '#000',
-  //   borderWidth: 0.1,
-  //   borderRadius: 10,
-  //   padding: 20,
-  //   backgroundColor: '#fff',
-  //   shadowOpacity: 0.25,
-  //   shadowRadius: 3.84,
-  //   elevation: 5,
-  // },
   statusTracker: {
-    marginTop: 20,
+    marginTop: 10,
     borderColor: '#000',
     borderWidth: 0.1,
     borderRadius: 10,

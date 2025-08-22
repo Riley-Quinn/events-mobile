@@ -171,7 +171,8 @@ const TaskList = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      <View style={styles.headerBackground} />
+
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -179,62 +180,94 @@ const TaskList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
+
         <Text style={styles.title}>My Tasks</Text>
-        <TouchableOpacity
-          style={{ marginRight: 12 }}
-          onPress={() => setShowAll(prev => !prev)}
-        >
-          <Icon
-            name={showAll ? 'toggle' : 'toggle-outline'}
-            size={30}
-            color={showAll ? 'red' : '#888'}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AddTasks')}
-        >
-          <Icon name="add-circle" size={30} color="#ff883a" />
-        </TouchableOpacity>
+
+        <View style={styles.rightIcons}>
+          <TouchableOpacity
+            style={{ marginRight: 15 }}
+            onPress={() => setShowAll(prev => !prev)}
+          >
+            <Icon
+              name={showAll ? 'toggle' : 'toggle-outline'}
+              size={30}
+              color={showAll ? 'red' : '#000'}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('AddTasks')}>
+            <Icon name="add-circle" size={30} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* 🔥 Drax Drag & Drop List */}
-      <DraxProvider>
-        <DraxList
-          data={tasks}
-          renderItemContent={renderTask}
-          keyExtractor={item => item.task_id.toString()}
-          reorderable={true}
-          onItemReorder={onItemReorder}
-          scrollEnabled={true}
-          itemAnimator={{ type: 'scale', spring: true }}
-          dragPayload={item => item}
-        />
-      </DraxProvider>
+      <View style={{ flex: 1 }}>
+        <DraxProvider>
+          {tasks.length === 0 ? (
+            <View style={styles.noEventsContainer}>
+              <Text style={styles.noEventsText}>No Tasks Today</Text>
+            </View>
+          ) : (
+            <DraxList
+              data={tasks}
+              renderItemContent={renderTask}
+              keyExtractor={item => item.task_id.toString()}
+              reorderable={true}
+              onItemReorder={onItemReorder}
+              scrollEnabled={true}
+              itemAnimator={{ type: 'scale', spring: true }}
+              dragPayload={item => item}
+              contentContainerStyle={{ paddingTop: 20 }}
+            />
+          )}
+        </DraxProvider>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffeee6', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
+
+  headerBackground: {
+    backgroundColor: '#ff883a',
+    height: 120,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingVertical: 15,
+    marginTop: 40,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
   },
   backButton: { padding: 5, marginRight: 10 },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#000' },
-  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
+  rightIcons: { flexDirection: 'row', alignItems: 'center' },
+
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 10,
     elevation: 3,
     marginHorizontal: 20,
+    marginTop: 20,
   },
+
+  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
 
   cardHeader: {
     flexDirection: 'row',
@@ -242,7 +275,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  taskTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 10,
+  },
+  noEventsContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 300,
+  },
+  noEventsText: {
+    fontSize: 20,
+    color: '#000',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   actionIcons: { flexDirection: 'row' },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   label: { fontSize: 14, color: '#555', marginLeft: 8 },

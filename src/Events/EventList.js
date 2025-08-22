@@ -89,38 +89,42 @@ const EventList = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Icon name="chevron-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My Events</Text>
-        <TouchableOpacity
-          style={{ marginRight: 12 }}
-          onPress={() => setShowAll(prev => !prev)}
-        >
-          <Icon
-            name={showAll ? 'toggle' : 'toggle-outline'}
-            size={30}
-            color={showAll ? 'red' : '#888'}
-          />
-        </TouchableOpacity>
-        {PERMISSIONS.addEvent() && (
+      <View style={styles.headerBackground}>
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddEvent')}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Icon name="add-circle" size={30} color="#ff883a" />
+            <Icon name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
-        )}
+          <Text style={styles.title}>My Events</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              style={{ marginRight: 12 }}
+              onPress={() => setShowAll(prev => !prev)}
+            >
+              <Icon
+                name={showAll ? 'toggle' : 'toggle-outline'}
+                size={30}
+                color={showAll ? 'red' : '#888'}
+              />
+            </TouchableOpacity>
+            {PERMISSIONS.addEvent() && (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => navigation.navigate('AddEvent')}
+              >
+                <Icon name="add-circle" size={30} color="#ff883a" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
 
       <DraxProvider>
         {events.length === 0 ? (
           <View style={styles.noEventsContainer}>
-            <Text style={styles.noEventsText}>No events found</Text>
+            <Text style={styles.noEventsText}>No events Today</Text>
           </View>
         ) : (
           <DraxList
@@ -227,31 +231,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffeee6',
-
-    // backgroundColor: '#ff883a',
-    paddingTop: 50,
+    paddingTop: 130,
   },
+
+  headerBackground: {
+    backgroundColor: '#ff883a',
+    height: 120,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
-  backButton: {
-    padding: 5,
-    marginRight: 10,
+    marginTop: 60,
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     color: '#000',
   },
+
   addButton: {
     backgroundColor: '#ffeee6',
     padding: 10,
     borderRadius: 50,
   },
+  backButton: {
+    padding: 5,
+    marginRight: 10,
+  },
+
   taskList: {
     paddingHorizontal: 16,
     paddingBottom: 100,
@@ -260,9 +276,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 10,
     marginHorizontal: 20,
     elevation: 3,
+    marginTop: 20,
   },
 
   cardHeader: {
@@ -293,11 +310,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 300,
+    paddingBottom: 300,
   },
   noEventsText: {
     fontSize: 20,
     color: '#000',
+    textAlign: 'center',
     fontWeight: 'bold',
   },
 });

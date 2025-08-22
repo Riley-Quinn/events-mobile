@@ -14,7 +14,9 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Icons from 'react-native-vector-icons/Ionicons';
+import Feather from 'react-native-vector-icons/Feather';
 
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { BASE_URL } from '@env';
@@ -167,6 +169,42 @@ const DashboardScreen = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      if (token) {
+        await axios.post(
+          `${BASE_URL}/api/auth/logout`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+      }
+
+      await AsyncStorage.multiRemove([
+        'token',
+        'userName',
+        'roleId',
+        'userId',
+        'permissions',
+      ]);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Logout error', error);
+      Alert.alert(
+        'Logout Failed',
+        error.response?.data?.message || error.message,
+      );
+    }
+  };
   const fetchTodayTasks = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -259,20 +297,32 @@ const DashboardScreen = () => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Image
-              source={require('../../assets/Profile.png')}
-              style={styles.avatar}
-            />
-          </TouchableOpacity>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.roleBadge}>{roleName}</Text>
-            <Text style={styles.name}>{userName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Image
+                source={require('../../assets/Profile.png')}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.roleBadge}>{roleName}</Text>
+              <Text style={styles.name}>{userName}</Text>
+            </View>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
-            <Icon name="calendar-outline" size={28} color="#000" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
+              <Icon
+                name="calendar-outline"
+                size={28}
+                color="#000"
+                style={{ marginRight: 15 }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+              <Icons name="log-out-outline" size={28} color="#000" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -306,8 +356,10 @@ const DashboardScreen = () => {
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.birthdayTitle}>Happy Birthday</Text>
-                      <Text style={styles.birthdayName}>{name}</Text>
-                      <Text style={styles.birthdayRole}>{roleName}</Text>
+                      <View style={{ alignItems: 'flex-start' }}>
+                        <Text style={styles.birthdayName}>{name}</Text>
+                        <Text style={styles.birthdayRole}>{roleName}</Text>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -347,18 +399,10 @@ const DashboardScreen = () => {
               style={{
                 backgroundColor: '#fff',
                 padding: 4,
-                borderRadius: 8,
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 20,
-                height: 20,
+                borderRadius: 4,
               }}
             >
-              <Image
-                source={require('../../assets/top-right.png')}
-                style={{ width: 10, height: 10 }}
-                resizeMode="contain"
-              />
+              <Feather name="arrow-up-right" size={18} color="#000" />
             </View>
           </TouchableOpacity>
         </View>
@@ -384,16 +428,11 @@ const DashboardScreen = () => {
                 borderRadius: 4,
               }}
             >
-              <Image
-                source={require('../../assets/top-right.png')}
-                style={{ width: 10, height: 10 }}
-                resizeMode="contain"
-              />
+              <Feather name="arrow-up-right" size={18} color="#000" />
             </View>
           </TouchableOpacity>
         </View>
       </View>
-
       <View style={styles.rowContainer}>
         <View
           style={{
@@ -456,13 +495,13 @@ const DashboardScreen = () => {
               <View
                 style={{
                   backgroundColor: item.bg,
-                  padding: 6,
-                  borderRadius: 20,
+                  padding: 3,
+
+                  borderRadius: 16,
                 }}
               >
                 <Icon name={item.icon} size={20} color={item.text} />
               </View>
-
               <Text
                 style={{
                   flex: 1,
@@ -474,11 +513,9 @@ const DashboardScreen = () => {
               >
                 {item.label}
               </Text>
-
               <Text
                 style={{
                   marginRight: 30,
-
                   fontSize: 14,
                   fontWeight: 'bold',
                   color: '#000',
@@ -489,49 +526,55 @@ const DashboardScreen = () => {
             </View>
           ))}
         </View>
+
         <View
           style={{
             flex: 1,
-            marginRight: 10,
+            marginLeft: 15,
             backgroundColor: '#fff',
             padding: 8,
-
             borderRadius: 12,
           }}
         >
           {[
             {
-              image: require('../../assets/draft.png'),
+              icon: 'drafts',
+              lib: 'Material',
               label: 'Draft',
               bg: '#FF9AA8',
               text: '#080808',
             },
             {
-              image: require('../../assets/open-book.png'),
+              icon: 'book-outline',
+              lib: 'Community',
               label: 'Open for Review',
               bg: '#FBD2A8',
               text: '#080808',
             },
             {
-              image: require('../../assets/book.png'),
+              icon: 'check-circle',
+              lib: 'Material',
               label: 'Ready to Publish',
               bg: '#8BE9AA',
               text: '#080808',
             },
             {
-              image: require('../../assets/paper-plane.png'),
+              icon: 'feedback',
+              lib: 'Material',
               label: 'Feedback Pending',
               bg: '#FBD2A8',
               text: '#080808',
             },
             {
-              image: require('../../assets/book.png'),
+              icon: 'book-outline',
+              lib: 'Community',
               label: 'Published',
               bg: '#8BE9AA',
               text: '#080808',
             },
             {
-              image: require('../../assets/paper-plane.png'),
+              icon: 'unpublished',
+              lib: 'Material',
               label: 'Unpublished',
               bg: '#AED0FE',
               text: '#080808',
@@ -551,15 +594,15 @@ const DashboardScreen = () => {
               <View
                 style={{
                   backgroundColor: item.bg,
-                  padding: 6,
-                  borderRadius: 20,
+                  padding: 3,
+                  borderRadius: 16,
                 }}
               >
-                <Image
-                  source={item.image}
-                  style={{ width: 20, height: 20 }}
-                  resizeMode="contain"
-                />
+                {item.lib === 'Material' ? (
+                  <MaterialIcons name={item.icon} size={20} color={item.text} />
+                ) : (
+                  <Icon name={item.icon} size={20} color={item.text} />
+                )}
               </View>
 
               <Text
@@ -573,14 +616,7 @@ const DashboardScreen = () => {
               >
                 {item.label}
               </Text>
-
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: 'bold',
-                  color: '#000',
-                }}
-              >
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#000' }}>
                 {pressReleaseCounts[item.label] || 0}
               </Text>
             </View>
@@ -624,7 +660,7 @@ const DashboardScreen = () => {
               marginHorizontal: 20,
             }}
           >
-            No Schedule Today
+            No activities scheduled for Today
           </Text>
         ) : (
           <>
@@ -677,7 +713,7 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 14,
+                        fontSize: 16,
                         color: '#fff',
                         width: 80,
                       }}
@@ -687,7 +723,7 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 14,
+                        fontSize: 16,
                         color: '#fff',
                         flex: 1,
                       }}
@@ -708,7 +744,7 @@ const DashboardScreen = () => {
                       style={{
                         fontWeight: 'bold',
                         fontSize: 14,
-                        color: '#ccc',
+                        color: '#f5f5f5',
                         width: 80,
                       }}
                     >
@@ -718,7 +754,7 @@ const DashboardScreen = () => {
                       style={{
                         fontWeight: 'bold',
                         fontSize: 14,
-                        color: '#ccc',
+                        color: '#f5f5f5',
                         flex: 1,
                       }}
                       numberOfLines={1}
@@ -731,8 +767,8 @@ const DashboardScreen = () => {
             })}
 
             {todayEvents.map((event, i) => {
-              const time = moment(event.created_at).format('hh:mm'); // full time (10:45)
-              const ampm = moment(event.created_at).format('A'); // AM or PM
+              const time = moment(event.created_at).format('hh:mm');
+              const ampm = moment(event.created_at).format('A');
 
               return (
                 <TouchableOpacity
@@ -779,7 +815,7 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 14,
+                        fontSize: 16,
                         color: '#fff',
                         width: 80,
                       }}
@@ -789,7 +825,7 @@ const DashboardScreen = () => {
                     <Text
                       style={{
                         fontWeight: 'bold',
-                        fontSize: 14,
+                        fontSize: 16,
                         color: '#fff',
                         flex: 1,
                       }}
@@ -810,7 +846,7 @@ const DashboardScreen = () => {
                       style={{
                         fontWeight: 'bold',
                         fontSize: 14,
-                        color: '#ccc',
+                        color: '#f5f5f5',
                         width: 80,
                       }}
                     >
@@ -820,7 +856,7 @@ const DashboardScreen = () => {
                       style={{
                         fontWeight: 'bold',
                         fontSize: 14,
-                        color: '#ccc',
+                        color: '#f5f5f5',
                         flex: 1,
                       }}
                       numberOfLines={1}
@@ -851,8 +887,8 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   menuButton: { position: 'absolute', top: 20, left: 20 },
@@ -902,19 +938,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   birthdayName: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#000',
     marginTop: 10,
-    marginRight: 7,
+    marginHorizontal: 5,
   },
+
   birthdayRole: {
     fontSize: 12,
     color: '#666',
     fontWeight: 'bold',
-    marginTop: 4,
-    marginLeft: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: '#ffeee6',
   },
 
   birthdayTitle: { fontSize: 16, fontWeight: 'bold', color: '#000' },
@@ -922,7 +963,7 @@ const styles = StyleSheet.create({
   statusCard: {
     backgroundColor: '#fff',
     marginTop: 20,
-    marginHorizontal: 20,
+    marginHorizontal: -10,
     padding: 15,
     borderRadius: 12,
     borderWidth: 2,

@@ -61,7 +61,6 @@ const PressReleaseList = () => {
     }
   };
 
-  // Drag and drop reorder function
   const onItemReorder = async ({ fromIndex, toIndex }) => {
     const updatedPress = [...pressRelease];
     const movedItem = updatedPress.splice(fromIndex, 1)[0];
@@ -110,16 +109,18 @@ const PressReleaseList = () => {
         >
           <Icon name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Press Release</Text>
+        <Text style={styles.title}>My PressRelease</Text>
 
-        {PERMISSIONS.addEvent() && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddPressRelease')}
-          >
-            <Icon name="add-circle" size={30} color="#ff883a" />
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {PERMISSIONS.addEvent() && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddEvent')}
+            >
+              <Icon name="add-circle" size={30} color="#ff883a" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <DraxProvider>
@@ -136,7 +137,16 @@ const PressReleaseList = () => {
               }
             >
               <View style={styles.cardHeader}>
-                <Text style={styles.taskTitle}>{item.title}</Text>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text
+                    style={styles.taskTitle}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.title}
+                  </Text>
+                </View>
+
                 <View style={styles.actionIcons}>
                   {PERMISSIONS.addEvent() && (
                     <TouchableOpacity
@@ -175,19 +185,21 @@ const PressReleaseList = () => {
               </View>
 
               <View style={styles.row}>
-                <MaterialIcons name="notes" size={18} color="#ff883a" />
-                <Text
-                  style={[styles.label, { flex: 1 }]}
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                >
-                  {item.notes}
-                </Text>
+                <View style={{ marginTop: 2 }}>
+                  <MaterialIcons name="notes" size={18} color="#ff883a" />
+                </View>
+                <Text style={[styles.label, { flex: 1 }]}>{item.notes}</Text>
               </View>
 
               <View style={styles.row}>
                 <FontAwesome5 name="user-circle" size={18} color="#ff883a" />
-                <Text style={styles.label}> {item.assignee_name}</Text>
+                <Text
+                  style={[styles.label, { flex: 1 }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.assignee_name}
+                </Text>
               </View>
 
               <View style={styles.row}>
@@ -217,24 +229,35 @@ const PressReleaseList = () => {
     </View>
   );
 };
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffeee6', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#ffeee6' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    backgroundColor: '#ff883a',
+    paddingBottom: 15,
+    paddingTop: 60,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
+  addButton: {
+    backgroundColor: '#ffeee6',
+    padding: 10,
+    borderRadius: 50,
+  },
+
   backButton: { padding: 5, marginRight: 10 },
   title: { fontSize: 26, fontWeight: 'bold', color: '#000' },
-  addButton: { backgroundColor: '#ffeee6', padding: 10, borderRadius: 50 },
   taskList: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 15,
+    marginBottom: 10,
+    marginTop: 30,
     marginHorizontal: 20,
     elevation: 3,
   },
@@ -247,8 +270,19 @@ const styles = StyleSheet.create({
   },
   taskTitle: { fontSize: 20, fontWeight: 'bold', color: '#000' },
   actionIcons: { flexDirection: 'row' },
-  row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  label: { fontSize: 15, color: '#000', marginLeft: 8 },
+  row: {
+    flexDirection: 'row',
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+
+  label: {
+    fontSize: 15,
+    color: '#000',
+    marginLeft: 8,
+    flexShrink: 1,
+  },
+
   status: { fontSize: 15, fontWeight: 'bold', marginTop: 5, marginLeft: 8 },
 });
 

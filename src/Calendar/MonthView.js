@@ -38,15 +38,13 @@ const MonthView = () => {
     importantDays: [],
     tasks: [],
   });
-  const formattedDisplayDate = moment(currentDate).format('D,MMMM YYYY');
+  const formattedDisplayDate = moment(currentDate).format('D MMMM YYYY');
 
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
-  // Birthday Edit
   const [editBirthday, setEditBirthday] = useState(null);
-  // Important Day Edit
   const [editImportantDay, setEditImportantDay] = useState(null);
 
   useEffect(() => {
@@ -153,7 +151,6 @@ const MonthView = () => {
 
     const daysInMonth = moment(visibleMonth, 'YYYY-MM').daysInMonth();
 
-    // Birthdays (recurring)
     allData.birthdays.forEach(item => {
       const birthdayMMDD = moment(item.birth_date).format('MM-DD');
       for (let d = 1; d <= daysInMonth; d++) {
@@ -164,23 +161,20 @@ const MonthView = () => {
       }
     });
 
-    // Events
     allData.events.forEach(item => {
       const date = moment(item.date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'events');
     });
-    //tasks
+
     allData.tasks.forEach(item => {
       const date = moment(item.start_date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'events');
     });
-    // Important Days
     allData.importantDays.forEach(item => {
       const date = moment(item.importantDay_date).format('YYYY-MM-DD');
       if (date.startsWith(visibleMonth)) markDay(date, 'importantDays');
     });
 
-    // Selected date
     if (currentDate) {
       marks[currentDate] = {
         ...(marks[currentDate] || {}),
@@ -193,7 +187,6 @@ const MonthView = () => {
     return marks;
   }, [allData, visibleMonth, currentDate]);
 
-  // Handle Birthday Update/Delete
   const updateBirthday = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -305,7 +298,7 @@ const MonthView = () => {
           markedDates={markedDates}
           markingType={'multi-dot'}
           theme={{
-            calendarBackground: '#ffeee6',
+            calendarBackground: '#fff',
             selectedDayBackgroundColor: '#ff883a',
             selectedDayTextColor: '#fff',
             todayTextColor: '#ff883a',
@@ -329,9 +322,13 @@ const MonthView = () => {
         />
       ) : (
         <View style={styles.eventList}>
-          <Text style={styles.heading}>
-            All schedules {formattedDisplayDate}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.heading}>All schedules</Text>
+            <Text style={[styles.heading, { marginLeft: 10 }]}>
+              {formattedDisplayDate}
+            </Text>
+          </View>
+
           <FlatList
             data={filteredEvents}
             keyExtractor={(item, index) => index.toString()}
@@ -531,7 +528,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 5,
   },
-  eventText: { fontSize: 14, color: '#000', fontWeight: 'bold' },
+  eventText: { fontSize: 14, color: '#fff', fontWeight: 'bold' },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -591,16 +588,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-  },
-
-  emoji: {
-    fontSize: 14,
-    backgroundColor: 'red',
-    borderRadius: 15,
-    paddingHorizontal: 8,
-    // paddingVertical: 2,
-    fontcolor: '#000',
-    fontWeight: 'bold',
   },
 
   arrow: {

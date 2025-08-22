@@ -328,17 +328,16 @@ const ViewEvent = ({ route, navigation }) => {
 
       <View style={styles.container}>
         <View style={styles.card}>
-          <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-            <Text style={{ marginHorizontal: 4 }}>:</Text>
-          </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ marginBottom: 10 }}>
             <Text style={styles.value}>{event.description}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Location</Text>
             <Text style={styles.colon}>:</Text>
             <Text style={styles.value}>{event.location}</Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Date</Text>
             <Text style={styles.colon}>:</Text>
@@ -346,6 +345,7 @@ const ViewEvent = ({ route, navigation }) => {
               {moment(event.date).format('DD MMM YYYY')}
             </Text>
           </View>
+
           <View style={styles.row}>
             <Text style={styles.label}>Time</Text>
             <Text style={styles.colon}>:</Text>
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   value: { flex: 1, fontSize: 16, color: '#000', flexWrap: 'wrap' },
-  descriptionText: { fontSize: 16, color: '#000', marginTop: 4 },
+  descriptionText: { fontSize: 16, color: '#000', marginTop: -20 },
   uploadBtn: {
     backgroundColor: '#ff883a',
     padding: 12,
@@ -458,6 +458,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     marginTop: 24,
+    marginHorizontal: 10,
     marginBottom: 10,
     color: '#000',
     fontWeight: 'bold',
