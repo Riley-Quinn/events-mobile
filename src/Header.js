@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
+  Alert,
   Pressable,
   Animated,
   Image,
@@ -13,6 +14,10 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MCIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { BASE_URL } from '@env';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 const Header = ({ title }) => {
   const [rightMenuVisible, setRightMenuVisible] = useState(false);
@@ -83,16 +88,8 @@ const Header = ({ title }) => {
                   icon: 'view-dashboard',
                   route: 'PasswordChange',
                 },
-                {
-                  label: 'Gallery',
-                  icon: 'account-cog',
-                  route: 'Gallery',
-                },
-                {
-                  label: 'Tasks',
-                  icon: 'calendar-clock',
-                  route: 'TaskList',
-                },
+                { label: 'Gallery', icon: 'account-cog', route: 'Gallery' },
+                { label: 'Tasks', icon: 'calendar-clock', route: 'TaskList' },
                 {
                   label: 'Events',
                   icon: 'robot-industrial',
@@ -106,18 +103,59 @@ const Header = ({ title }) => {
                 {
                   label: 'Logout',
                   icon: 'file-document-edit',
-                  route: 'LoginScreen',
-                  onPress: () => {
-                    // Add logout logic here
+                  route: 'handleLogout',
+                  onPress: async () => {
+                    try {
+                      const token = await AsyncStorage.getItem('token');
+
+                      if (token) {
+                        await axios.post(
+                          `${BASE_URL}/api/auth/logout`,
+                          {},
+                          {
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                          },
+                        );
+                      }
+
+                      await AsyncStorage.multiRemove([
+                        'token',
+                        'userName',
+                        'roleId',
+                        'userId',
+                        'permissions',
+                      ]);
+
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+
+                      console.log('Logged out completely!');
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                      Alert.alert(
+                        'Logout Failed',
+                        error.response?.data?.message || error.message,
+                      );
+                    }
                   },
                 },
               ].map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.menuItemRow}
-                  onPress={() => {
+                  onPress={async () => {
                     setLeftMenuVisible(false); // Close the drawer
-                    navigation.navigate(item.route); // Navigate to the screen
+
+                    if (item.label === 'Logout') {
+                      // Call the logout logic for Logout menu item
+                      await item.onPress();
+                    } else {
+                      navigation.navigate(item.route); // Navigate to the screen
+                    }
                   }}
                 >
                   <MCIcon

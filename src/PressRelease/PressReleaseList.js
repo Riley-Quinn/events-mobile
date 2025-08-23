@@ -21,27 +21,16 @@ const PressReleaseList = () => {
       fetchPressRelease();
     }, []),
   );
-
-  const fetchPressRelease = async showAllFlag => {
+  const fetchPressRelease = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/press-release`, {
+      const res = await axios.get(`${BASE_URL}/api/press-release/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const allPressRelease = res.data;
-
-      if (showAllFlag) {
-        setPressRelease(allPressRelease);
-      } else {
-        const today = moment().format('YYYY-MM-DD');
-        const filteredPressRelease = allPressRelease.filter(
-          event => moment(event.date).format('YYYY-MM-DD') === today,
-        );
-        setPressRelease(filteredPressRelease);
-      }
+      setPressRelease(res.data);
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch pressRelease');
+      Alert.alert('Error', 'Failed to fetch Press Release');
     }
   };
 

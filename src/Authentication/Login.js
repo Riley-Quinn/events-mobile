@@ -35,7 +35,40 @@ const LoginSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [isListenerAttached, setIsListenerAttached] = useState(false); // ✅ FCM flag
+
+  // const handleLogin = async (values, { setSubmitting }) => {
+  //   try {
+  //     const response = await axios.post(API_URL, {
+  //       email: values.email,
+  //       password: values.password,
+  //     });
+
+  //     const { token, permissions, user } = response.data;
+  //     console.log('response', response?.data);
+  //     await AsyncStorage.setItem('token', token);
+  //     await AsyncStorage.setItem('userName', user.name);
+  //     await AsyncStorage.setItem('userId', String(user.id));
+  //     await AsyncStorage.setItem('roleId', String(user.role_id));
+  //     await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
+  //     updateAbility(permissions);
+
+  //     navigation.reset({
+  //       index: 0,
+  //       routes: [{ name: 'DashboardScreen' }],
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+
+  //     const errorMessage =
+  //       error.response?.data?.message ||
+  //       error.message ||
+  //       'Something went wrong';
+
+  //     Alert.alert('Login Failed', errorMessage);
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // };
 
   const handleLogin = async (values, { setSubmitting }) => {
     try {
@@ -45,6 +78,7 @@ const LoginScreen = () => {
       });
 
       const { token, permissions, user } = response.data;
+
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('userName', user.name);
       await AsyncStorage.setItem('userId', String(user.id));
@@ -52,27 +86,26 @@ const LoginScreen = () => {
       await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
       updateAbility(permissions);
 
-      const hasPermission = await requestNotificationPermission();
-
-      if (hasPermission) {
-        // ✅ Register and store FCM token
-        await handleFcmToken(
-          user.id,
-          getFcmToken,
-          isListenerAttached,
-          setIsListenerAttached,
-        );
-      } else {
-        console.warn('🔕 Notification permission not granted');
-      }
-
+      // 1️⃣ Navigate first
       navigation.reset({
         index: 0,
         routes: [{ name: 'DashboardScreen' }],
       });
+
+      // 2️⃣ Then ask for notifications (after navigation)
+      setTimeout(async () => {
+        const granted = await requestNotificationPermission();
+        if (granted) {
+          await handleFcmToken(
+            user.id,
+            getFcmToken,
+            false, // isListenerAttached
+            () => {}, // setIsListenerAttached
+          );
+        }
+      }, 500); // slight delay so navigation feels instant
     } catch (error) {
       console.error(error);
-
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
