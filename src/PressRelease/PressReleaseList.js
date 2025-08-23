@@ -12,8 +12,6 @@ import moment from 'moment';
 import { DraxProvider, DraxList } from 'react-native-drax';
 import { PERMISSIONS } from '../Dashboard/contextPage';
 
-import { ability } from '../casl/ability';
-
 const PressReleaseList = () => {
   const navigation = useNavigation();
   const [pressRelease, setPressRelease] = useState([]);
