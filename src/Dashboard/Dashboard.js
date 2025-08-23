@@ -25,6 +25,7 @@ import PushNotification from 'react-native-push-notification';
 import { Linking, Alert } from 'react-native';
 
 import messaging from '@react-native-firebase/messaging';
+import Header from '../Header';
 
 const { width } = Dimensions.get('window');
 
@@ -41,25 +42,6 @@ const DashboardScreen = () => {
   const [pressReleaseCounts, setPressReleaseCounts] = useState({});
 
   const scrollRef = useRef(null);
-
-  useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('🔔 Foreground FCM:', remoteMessage);
-
-      PushNotification.localNotification({
-        channelId: 'default-channel-id',
-        title: remoteMessage.notification?.title || 'Notification',
-        message: remoteMessage.notification?.body || 'You have a message',
-        bigText: remoteMessage.notification?.body || '',
-        playSound: true,
-        soundName: 'default',
-        importance: 'high',
-        vibrate: true,
-      });
-    });
-
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -295,37 +277,7 @@ const DashboardScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              <Image
-                source={require('../../assets/Profile.png')}
-                style={styles.avatar}
-              />
-            </TouchableOpacity>
-            <View style={{ marginLeft: 10 }}>
-              <Text style={styles.roleBadge}>{roleName}</Text>
-              <Text style={styles.name}>{userName}</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
-              <Icon
-                name="calendar-outline"
-                size={28}
-                color="#000"
-                style={{ marginRight: 15 }}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout}>
-              <Icons name="log-out-outline" size={28} color="#000" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
+      <Header title={`Welcome, ${userName},(${roleName})`} />
       <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
         <View style={styles.birthdayWrapper}>
           {birthdayNames.length > 0 ? (
@@ -623,7 +575,6 @@ const DashboardScreen = () => {
           ))}
         </View>
       </View>
-
       <View style={{ marginTop: 20 }}>
         <View
           style={{

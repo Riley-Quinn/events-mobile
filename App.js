@@ -23,6 +23,7 @@ import Gallery from './src/Gallery/Gallery';
 import ViewPressRelease from './src/PressRelease/ViewPressRelease';
 import EditPressRelease from './src/PressRelease/EditPressRelease';
 import EditTask from './src/Tasks/EditTask';
+import PasswordChange from './src/Authentication/PasswordChange';
 import PushNotification from 'react-native-push-notification';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -124,6 +125,7 @@ export default function App() {
               component={EditPressRelease}
             />
             <Stack.Screen name="EditTask" component={EditTask} />
+            <Stack.Screen name="PasswordChange" component={PasswordChange} />
           </Stack.Navigator>
         </NavigationContainer>
       </GestureHandlerRootView>
