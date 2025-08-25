@@ -35,41 +35,6 @@ const LoginSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-
-  // const handleLogin = async (values, { setSubmitting }) => {
-  //   try {
-  //     const response = await axios.post(API_URL, {
-  //       email: values.email,
-  //       password: values.password,
-  //     });
-
-  //     const { token, permissions, user } = response.data;
-  //     console.log('response', response?.data);
-  //     await AsyncStorage.setItem('token', token);
-  //     await AsyncStorage.setItem('userName', user.name);
-  //     await AsyncStorage.setItem('userId', String(user.id));
-  //     await AsyncStorage.setItem('roleId', String(user.role_id));
-  //     await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
-  //     updateAbility(permissions);
-
-  //     navigation.reset({
-  //       index: 0,
-  //       routes: [{ name: 'DashboardScreen' }],
-  //     });
-  //   } catch (error) {
-  //     console.error(error);
-
-  //     const errorMessage =
-  //       error.response?.data?.message ||
-  //       error.message ||
-  //       'Something went wrong';
-
-  //     Alert.alert('Login Failed', errorMessage);
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // };
-
   const handleLogin = async (values, { setSubmitting }) => {
     try {
       const response = await axios.post(API_URL, {
@@ -136,8 +101,8 @@ const LoginScreen = () => {
 
           <Formik
             initialValues={{
-              email: 'superadmin@example.com',
-              password: 'Password123!',
+              email: '',
+              password: '',
             }}
             validationSchema={LoginSchema}
             onSubmit={handleLogin}
@@ -221,7 +186,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     width: '95%',
     borderRadius: 40,
-    marginTop: 50,
     paddingVertical: 30,
     paddingHorizontal: 20,
     alignItems: 'center',

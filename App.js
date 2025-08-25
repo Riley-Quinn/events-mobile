@@ -28,6 +28,8 @@ import PasswordChange from './src/Authentication/PasswordChange';
 import PushNotification from 'react-native-push-notification';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import messaging from '@react-native-firebase/messaging';
+import AddPrivatePage from './src/PrivatePage/AddPrivatePage';
+import PrivatePageList from './src/PrivatePage/PrivatePageList';
 
 const Stack = createNativeStackNavigator();
 
@@ -87,7 +89,10 @@ export default function App() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator
+            initialRouteName="DashboardScreen"
+            screenOptions={{ headerShown: false }}
+          >
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
             <Stack.Screen name="AddEvents" component={AddEvents} />
@@ -119,6 +124,8 @@ export default function App() {
             />
             <Stack.Screen name="EditTask" component={EditTask} />
             <Stack.Screen name="PasswordChange" component={PasswordChange} />
+            <Stack.Screen name="AddPrivatePage" component={AddPrivatePage} />
+            <Stack.Screen name="PrivatePageList" component={PrivatePageList} />
           </Stack.Navigator>
         </NavigationContainer>
       </GestureHandlerRootView>

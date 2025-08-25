@@ -13,6 +13,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
+import { BASE_URL } from '@env';
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,35 +41,47 @@ const PasswordChange = ({ navigation }) => {
 
   const handleSave = async values => {
     try {
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        Alert.alert('Error', 'User not found. Please log in again.');
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Session expired. Please log in again.');
         return;
       }
 
       const res = await axios.put(
-        `http://10.0.2.2:5000/api/employee/password/${userId}`,
+        `${BASE_URL}/api/auth/change-password`,
         {
-          password: values.currentPassword,
+          oldPassword: values.currentPassword,
           newPassword: values.newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
       );
 
       if (res.status === 200) {
-        Alert.alert('Success', 'Password updated successfully');
-        navigation.navigate('ProfileScreen');
+        Alert.alert(
+          'Success',
+          res.data.message || 'Password updated successfully',
+        );
       }
     } catch (err) {
+      console.error(
+        'Change Password Error:',
+        err.response?.data || err.message,
+      );
       Alert.alert(
         'Error',
-        err.response?.data?.error || 'Something went wrong. Please try again.',
+        err.response?.data?.message ||
+          'Something went wrong. Please try again.',
       );
     }
   };
 
   return (
     <>
-      <SafeAreaView style={{ backgroundColor: '#008080', padding: 0 }}>
+      <SafeAreaView style={{ backgroundColor: '#FF7F2A', padding: 0 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={26} color="#fff" />
@@ -78,10 +91,6 @@ const PasswordChange = ({ navigation }) => {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.profileCircle}>
-          <EvilIcons name="lock" size={70} color="#fff" />
-        </View>
-
         <Formik
           initialValues={{
             currentPassword: '',
@@ -101,14 +110,11 @@ const PasswordChange = ({ navigation }) => {
           }) => (
             <>
               <View style={styles.inputContainer}>
-                <View style={styles.labelContainer}>
-                  <Text style={styles.labelText}>Current Password</Text>
-                </View>
                 <View style={{ position: 'relative' }}>
                   <TextInput
                     style={styles.input}
                     placeholder="Enter Current Password"
-                    placeholderTextColor="#888"
+                    placeholderTextColor="#000"
                     secureTextEntry={!showCurrent}
                     value={values.currentPassword}
                     onChangeText={handleChange('currentPassword')}
@@ -129,14 +135,11 @@ const PasswordChange = ({ navigation }) => {
                   <Text style={styles.errorText}>{errors.currentPassword}</Text>
                 )}
 
-                <View style={styles.labelContainer}>
-                  <Text style={styles.labelText}>New Password</Text>
-                </View>
                 <View style={{ position: 'relative' }}>
                   <TextInput
                     style={styles.input}
                     placeholder="Enter New Password"
-                    placeholderTextColor="#888"
+                    placeholderTextColor="#000"
                     secureTextEntry={!showNew}
                     value={values.newPassword}
                     onChangeText={handleChange('newPassword')}
@@ -157,14 +160,11 @@ const PasswordChange = ({ navigation }) => {
                   <Text style={styles.errorText}>{errors.newPassword}</Text>
                 )}
 
-                <View style={styles.labelContainer}>
-                  <Text style={styles.labelText}>Confirm Password</Text>
-                </View>
                 <View style={{ position: 'relative' }}>
                   <TextInput
                     style={styles.input}
                     placeholder="Confirm New Password"
-                    placeholderTextColor="#888"
+                    placeholderTextColor="#000"
                     secureTextEntry={!showConfirm}
                     value={values.confirmPassword}
                     onChangeText={handleChange('confirmPassword')}
@@ -190,72 +190,23 @@ const PasswordChange = ({ navigation }) => {
                 style={styles.saveButton}
                 onPress={handleSubmit}
               >
-                <MaterialIcons
-                  name="system-update-alt"
-                  size={20}
-                  color="#fff"
-                />
-                <Text style={styles.saveButtonText}> Password update</Text>
+                <Text style={styles.saveButtonText}> Update</Text>
               </TouchableOpacity>
             </>
           )}
         </Formik>
       </ScrollView>
-
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Dashboard')}
-        >
-          <FontAwesome name="home" size={30} color="#008080" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('EventsCalendar')}
-        >
-          <Ionicons name="calendar" size={30} color="#888" />
-          <Text style={styles.navText}>Calendar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('EventsOverview')}
-        >
-          <MaterialIcons name="event" size={30} color="#888" />
-          <Text style={styles.navText}>Events</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <FontAwesome name="user" size={30} color="#888" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    backgroundColor: '#F0F9F8',
-    paddingHorizontal: 40,
-  },
-
-  profileCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 80,
-    backgroundColor: '#00BFA6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -10,
-    marginBottom: 50,
+    backgroundColor: '#ffeee6',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
 
   inputContainer: {
@@ -267,6 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     marginBottom: 30,
+    marginHorizontal: 20,
   },
 
   eyeIcon: {
@@ -275,8 +227,8 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-    backgroundColor: '#00BFA6',
-    width: '110%',
+    backgroundColor: '#FF7F2A',
+    width: '100%',
     borderRadius: 15,
     alignItems: 'center',
     marginTop: 30,
@@ -303,32 +255,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#008080',
+    backgroundColor: '#FF7F2A',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#000',
     marginLeft: 15,
   },
 
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navText: {
-    fontSize: 14,
-    color: '#888',
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
   labelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -342,15 +277,15 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    backgroundColor: '#E6F2F1',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 12,
     fontSize: 14,
-    marginHorizontal: 15,
-    color: '#008080',
+    color: '#000',
     fontWeight: 'bold',
     marginBottom: 45,
+    borderWidth: 0.5,
+    borderColor: '#000',
   },
   eyeIconRight: {
     position: 'absolute',

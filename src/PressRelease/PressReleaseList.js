@@ -27,7 +27,7 @@ const PressReleaseList = () => {
       const res = await axios.get(`${BASE_URL}/api/press-release/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPressRelease(res.data);
+      setPressRelease(res.data.list);
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Failed to fetch Press Release');
@@ -99,10 +99,10 @@ const PressReleaseList = () => {
         <Text style={styles.title}>My PressRelease</Text>
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {PERMISSIONS.addEvent() && (
+          {PERMISSIONS.addPressRelease() && (
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => navigation.navigate('AddEvent')}
+              onPress={() => navigation.navigate('AddPressRelease')}
             >
               <Icon name="add-circle" size={30} color="#ff883a" />
             </TouchableOpacity>
@@ -135,7 +135,7 @@ const PressReleaseList = () => {
                 </View>
 
                 <View style={styles.actionIcons}>
-                  {PERMISSIONS.addEvent() && (
+                  {PERMISSIONS.addPressRelease() && (
                     <TouchableOpacity
                       onPress={() =>
                         navigation.navigate('EditPressRelease', {
@@ -147,7 +147,7 @@ const PressReleaseList = () => {
                     </TouchableOpacity>
                   )}
 
-                  {PERMISSIONS.addEvent() && (
+                  {PERMISSIONS.deletePressRelease() && (
                     <TouchableOpacity
                       onPress={() =>
                         Alert.alert(

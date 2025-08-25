@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { BASE_URL } from '@env';
+import { PERMISSIONS } from './Dashboard/contextPage';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 const Header = ({ title }) => {
@@ -81,28 +82,61 @@ const Header = ({ title }) => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {[
-                { label: 'Calendar', icon: 'tools', route: 'DayView' },
-                { label: 'Profile', icon: 'factory', route: 'Profile' },
+                { label: 'Calendar', icon: 'calendar', route: 'DayView' },
+                { label: 'Profile', icon: 'account', route: 'Profile' },
                 {
                   label: 'Change Password',
-                  icon: 'view-dashboard',
+                  icon: 'email-lock',
                   route: 'PasswordChange',
                 },
-                { label: 'Gallery', icon: 'account-cog', route: 'Gallery' },
-                { label: 'Tasks', icon: 'calendar-clock', route: 'TaskList' },
-                {
-                  label: 'Events',
-                  icon: 'robot-industrial',
-                  route: 'EventsList',
-                },
-                {
-                  label: 'Press Release',
-                  icon: 'clipboard-check',
-                  route: 'PressReleaseList',
-                },
+                ...(PERMISSIONS.viewMedia()
+                  ? [
+                      {
+                        label: 'Gallery',
+                        icon: 'folder-multiple-image',
+                        route: 'Gallery',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.ViewTask()
+                  ? [
+                      {
+                        label: 'Tasks',
+                        icon: 'robot-industrial',
+                        route: 'TaskList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.viewEvent()
+                  ? [
+                      {
+                        label: 'Events',
+                        icon: 'av-timer',
+                        route: 'EventsList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.ViewPressRelease()
+                  ? [
+                      {
+                        label: 'Press Release',
+                        icon: 'folder-multiple-image',
+                        route: 'PressReleaseList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.manageUser()
+                  ? [
+                      {
+                        label: 'Private Page',
+                        icon: 'robot-industrial',
+                        route: 'PrivatePageList',
+                      },
+                    ]
+                  : []),
                 {
                   label: 'Logout',
-                  icon: 'file-document-edit',
+                  icon: 'logout',
                   route: 'handleLogout',
                   onPress: async () => {
                     try {
@@ -161,7 +195,7 @@ const Header = ({ title }) => {
                   <MCIcon
                     name={item.icon}
                     size={20}
-                    color="#fca103"
+                    color="#ffeee6"
                     style={styles.menuIcon}
                   />
                   <Text style={styles.menuItem}>{item.label}</Text>

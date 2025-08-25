@@ -156,7 +156,7 @@ const EventList = () => {
                         <Icon name="create-outline" size={22} color="#1976d2" />
                       </TouchableOpacity>
                     )}
-                    {PERMISSIONS.addEvent() && (
+                    {PERMISSIONS.deleteEvent() && (
                       <TouchableOpacity
                         onPress={() =>
                           Alert.alert('Delete Event', 'Are you sure?', [
