@@ -39,7 +39,7 @@ const DashboardScreen = () => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const [birthdayNames, setBirthdayNames] = useState([]);
   const [taskStatusCounts, setTaskStatusCounts] = useState({});
-  const [pressReleaseCounts, setPressReleaseCounts] = useState({});
+  const [pressReleaseStatusCounts, setPressReleaseStatusCounts] = useState({});
 
   const scrollRef = useRef(null);
 
@@ -90,11 +90,26 @@ const DashboardScreen = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const prs = Array.isArray(resPR.data) ? resPR.data : [];
+        const prs = Array.isArray(resPR.data.list)
+          ? resPR.data.list
+          : Array.isArray(resPR.data)
+          ? resPR.data
+          : [];
+
+        const normalizeStatus = s => {
+          if (!s) return '';
+          switch (s.toLowerCase()) {
+            case 'unpublish':
+            case 'unpublished':
+              return 'Unpublished';
+            default:
+              return s;
+          }
+        };
 
         const pressCounts = prs.reduce(
           (acc, pr) => {
-            const s = pr.status_name ?? pr.status;
+            const s = normalizeStatus(pr.status_name ?? pr.status);
             if (acc[s] !== undefined) acc[s] += 1;
             return acc;
           },
@@ -103,12 +118,12 @@ const DashboardScreen = () => {
             'Open for Review': 0,
             'Ready to Publish': 0,
             'Feedback Pending': 0,
-            Unpublish: 0,
+            Unpublished: 0,
             Published: 0,
           },
         );
 
-        setPressReleaseCounts(pressCounts);
+        setPressReleaseStatusCounts(pressCounts);
       } catch (err) {
         console.error('Error fetching status counts:', err);
       }
@@ -151,42 +166,6 @@ const DashboardScreen = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-
-      if (token) {
-        await axios.post(
-          `${BASE_URL}/api/auth/logout`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-      }
-
-      await AsyncStorage.multiRemove([
-        'token',
-        'userName',
-        'roleId',
-        'userId',
-        'permissions',
-      ]);
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    } catch (error) {
-      console.error('Logout error', error);
-      Alert.alert(
-        'Logout Failed',
-        error.response?.data?.message || error.message,
-      );
-    }
-  };
   const fetchTodayTasks = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -204,40 +183,6 @@ const DashboardScreen = () => {
     } catch (err) {
       console.error('Tasks error', err);
     }
-  };
-
-  const shareBirthdayWishes = names => {
-    if (names.length === 0) {
-      Alert.alert('No birthdays to share!');
-      return;
-    }
-
-    const message = `Happy Birthday ${names.join(', ')}! 🎉🎂`;
-    const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
-    const storeLink =
-      Platform.OS === 'ios'
-        ? 'https://apps.apple.com/app/whatsapp-messenger/id310633997'
-        : 'https://play.google.com/store/apps/details?id=com.whatsapp';
-
-    Linking.canOpenURL(url)
-      .then(supported => {
-        if (!supported) {
-          Alert.alert(
-            'WhatsApp not installed',
-            'You need WhatsApp to send birthday wishes. Install it from here?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Install',
-                onPress: () => Linking.openURL(storeLink),
-              },
-            ],
-          );
-        } else {
-          return Linking.openURL(url);
-        }
-      })
-      .catch(err => console.error('Error opening WhatsApp', err));
   };
 
   const fetchTodayBirthdays = async () => {
@@ -274,58 +219,73 @@ const DashboardScreen = () => {
       return () => clearInterval(interval);
     }
   }, [birthdayNames]);
+  const shareBirthdayWishes = name => {
+    const msg = `🎂 Happy Birthday ${name}! 🎉`;
+
+    const appUrl = `tg://msg?text=${encodeURIComponent(msg)}`;
+    const webUrl = `https://t.me/share/url?text=${encodeURIComponent(msg)}`;
+
+    Linking.canOpenURL(appUrl)
+      .then(supported => {
+        if (supported) {
+          Linking.openURL(appUrl);
+        } else {
+          Linking.openURL(webUrl);
+        }
+      })
+      .catch(() => Alert.alert('Error', 'Unable to open Telegram'));
+  };
 
   return (
     <ScrollView style={styles.container}>
       <Header title={`Welcome, ${userName},(${roleName})`} />
-      <TouchableOpacity onPress={() => navigation.navigate('DayView')}>
-        <View style={styles.birthdayWrapper}>
-          {birthdayNames.length > 0 ? (
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              ref={scrollRef}
-            >
-              {birthdayNames.map((name, index) => (
-                <View
-                  key={index}
-                  style={[styles.birthdayCard, { width: width - 32 }]}
+      <View style={styles.birthdayWrapper}>
+        {birthdayNames.length > 0 ? (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            ref={scrollRef}
+          >
+            {birthdayNames.map((name, index) => (
+              <View
+                key={index}
+                style={[styles.birthdayCard, { width: width - 32 }]}
+              >
+                <TouchableOpacity
+                  onPress={() => shareBirthdayWishes(name)} // 👈 pass the single name
+                  style={styles.shareButton}
                 >
-                  <TouchableOpacity
-                    onPress={() => shareBirthdayWishes([name])}
-                    style={styles.shareButton}
-                  >
-                    <Icon name="share-outline" size={24} color="#FF6B81" />
-                  </TouchableOpacity>
+                  <Icon name="share-outline" size={24} color="#FF6B81" />
+                </TouchableOpacity>
 
-                  <View style={styles.birthdayContent}>
-                    <FontAwesome5
-                      name="birthday-cake"
-                      size={40}
-                      color="#FF6B81"
-                      style={{ marginRight: 16 }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.birthdayTitle}>Happy Birthday</Text>
-                      <View style={{ alignItems: 'flex-start' }}>
-                        <Text style={styles.birthdayName}>{name}</Text>
-                        <Text style={styles.birthdayRole}>{roleName}</Text>
-                      </View>
+                <View style={styles.birthdayContent}>
+                  <FontAwesome5
+                    name="birthday-cake"
+                    size={40}
+                    color="#FF6B81"
+                    style={{ marginRight: 16 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.birthdayTitle}>Happy Birthday</Text>
+                    <View style={{ alignItems: 'flex-start' }}>
+                      <Text style={styles.birthdayName}>{name}</Text>
+                      <Text style={styles.birthdayRole}>{roleName}</Text>
                     </View>
                   </View>
                 </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.birthdayCard}>
-              <Text style={[styles.birthdayText, { textAlign: 'center' }]}>
-                No Birthdays Today
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.birthdayCard}>
+            <Text style={[styles.birthdayText, { textAlign: 'center' }]}>
+              No Birthdays Today
+            </Text>
+          </View>
+        )}
+      </View>
+
       <View
         style={{
           flexDirection: 'row',
@@ -569,7 +529,7 @@ const DashboardScreen = () => {
                 {item.label}
               </Text>
               <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#000' }}>
-                {pressReleaseCounts[item.label] || 0}
+                {pressReleaseStatusCounts[item.label] || 0}
               </Text>
             </View>
           ))}

@@ -35,8 +35,6 @@ const LoginSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [isListenerAttached, setIsListenerAttached] = useState(false); // ✅ FCM flag
-
   const handleLogin = async (values, { setSubmitting }) => {
     try {
       const response = await axios.post(API_URL, {
@@ -45,6 +43,7 @@ const LoginScreen = () => {
       });
 
       const { token, permissions, user } = response.data;
+
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('userName', user.name);
       await AsyncStorage.setItem('userId', String(user.id));
@@ -52,27 +51,26 @@ const LoginScreen = () => {
       await AsyncStorage.setItem('permissions', JSON.stringify(permissions));
       updateAbility(permissions);
 
-      const hasPermission = await requestNotificationPermission();
-
-      if (hasPermission) {
-        // ✅ Register and store FCM token
-        await handleFcmToken(
-          user.id,
-          getFcmToken,
-          isListenerAttached,
-          setIsListenerAttached,
-        );
-      } else {
-        console.warn('🔕 Notification permission not granted');
-      }
-
+      // 1️⃣ Navigate first
       navigation.reset({
         index: 0,
         routes: [{ name: 'DashboardScreen' }],
       });
+
+      // 2️⃣ Then ask for notifications (after navigation)
+      setTimeout(async () => {
+        const granted = await requestNotificationPermission();
+        if (granted) {
+          await handleFcmToken(
+            user.id,
+            getFcmToken,
+            false, // isListenerAttached
+            () => {}, // setIsListenerAttached
+          );
+        }
+      }, 500); // slight delay so navigation feels instant
     } catch (error) {
       console.error(error);
-
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -103,8 +101,8 @@ const LoginScreen = () => {
 
           <Formik
             initialValues={{
-              email: 'superadmin@example.com',
-              password: 'Password123!',
+              email: '',
+              password: '',
             }}
             validationSchema={LoginSchema}
             onSubmit={handleLogin}
@@ -188,7 +186,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     width: '95%',
     borderRadius: 40,
-    marginTop: 50,
     paddingVertical: 30,
     paddingHorizontal: 20,
     alignItems: 'center',

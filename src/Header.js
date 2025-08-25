@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
+  Alert,
   Pressable,
   Animated,
   Image,
@@ -13,6 +14,11 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import MCIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { BASE_URL } from '@env';
+import { PERMISSIONS } from './Dashboard/contextPage';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 const Header = ({ title }) => {
   const [rightMenuVisible, setRightMenuVisible] = useState(false);
@@ -76,54 +82,120 @@ const Header = ({ title }) => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {[
-                { label: 'Calendar', icon: 'tools', route: 'DayView' },
-                { label: 'Profile', icon: 'factory', route: 'Profile' },
+                { label: 'Calendar', icon: 'calendar', route: 'DayView' },
+                { label: 'Profile', icon: 'account', route: 'Profile' },
                 {
                   label: 'Change Password',
-                  icon: 'view-dashboard',
+                  icon: 'email-lock',
                   route: 'PasswordChange',
                 },
-                {
-                  label: 'Gallery',
-                  icon: 'account-cog',
-                  route: 'Gallery',
-                },
-                {
-                  label: 'Tasks',
-                  icon: 'calendar-clock',
-                  route: 'TaskList',
-                },
-                {
-                  label: 'Events',
-                  icon: 'robot-industrial',
-                  route: 'EventsList',
-                },
-                {
-                  label: 'Press Release',
-                  icon: 'clipboard-check',
-                  route: 'PressReleaseList',
-                },
+                ...(PERMISSIONS.viewMedia()
+                  ? [
+                      {
+                        label: 'Gallery',
+                        icon: 'folder-multiple-image',
+                        route: 'Gallery',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.ViewTask()
+                  ? [
+                      {
+                        label: 'Tasks',
+                        icon: 'robot-industrial',
+                        route: 'TaskList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.viewEvent()
+                  ? [
+                      {
+                        label: 'Events',
+                        icon: 'av-timer',
+                        route: 'EventsList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.ViewPressRelease()
+                  ? [
+                      {
+                        label: 'Press Release',
+                        icon: 'folder-multiple-image',
+                        route: 'PressReleaseList',
+                      },
+                    ]
+                  : []),
+                ...(PERMISSIONS.manageUser()
+                  ? [
+                      {
+                        label: 'Private Page',
+                        icon: 'robot-industrial',
+                        route: 'PrivatePageList',
+                      },
+                    ]
+                  : []),
                 {
                   label: 'Logout',
-                  icon: 'file-document-edit',
-                  route: 'LoginScreen',
-                  onPress: () => {
-                    // Add logout logic here
+                  icon: 'logout',
+                  route: 'handleLogout',
+                  onPress: async () => {
+                    try {
+                      const token = await AsyncStorage.getItem('token');
+
+                      if (token) {
+                        await axios.post(
+                          `${BASE_URL}/api/auth/logout`,
+                          {},
+                          {
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                          },
+                        );
+                      }
+
+                      await AsyncStorage.multiRemove([
+                        'token',
+                        'userName',
+                        'roleId',
+                        'userId',
+                        'permissions',
+                      ]);
+
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+
+                      console.log('Logged out completely!');
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                      Alert.alert(
+                        'Logout Failed',
+                        error.response?.data?.message || error.message,
+                      );
+                    }
                   },
                 },
               ].map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.menuItemRow}
-                  onPress={() => {
+                  onPress={async () => {
                     setLeftMenuVisible(false); // Close the drawer
-                    navigation.navigate(item.route); // Navigate to the screen
+
+                    if (item.label === 'Logout') {
+                      // Call the logout logic for Logout menu item
+                      await item.onPress();
+                    } else {
+                      navigation.navigate(item.route); // Navigate to the screen
+                    }
                   }}
                 >
                   <MCIcon
                     name={item.icon}
                     size={20}
-                    color="#fca103"
+                    color="#ffeee6"
                     style={styles.menuIcon}
                   />
                   <Text style={styles.menuItem}>{item.label}</Text>

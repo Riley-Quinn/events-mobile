@@ -11,6 +11,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
 import { DraxProvider, DraxList } from 'react-native-drax';
+import { PERMISSIONS } from '../Dashboard/contextPage';
 
 const TaskList = () => {
   const navigation = useNavigation();
@@ -107,28 +108,32 @@ const TaskList = () => {
       <View style={styles.cardHeader}>
         <Text style={styles.taskTitle}>{item.title}</Text>
         <View style={styles.actionIcons}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('EditTask', { taskId: item.task_id })
-            }
-          >
-            <Icon name="create-outline" size={22} color="#1976d2" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert('Delete Task', 'Are you sure?', [
-                { text: 'Cancel' },
-                {
-                  text: 'Delete',
-                  onPress: () => handleDelete(item.task_id),
-                  style: 'destructive',
-                },
-              ])
-            }
-            style={{ marginLeft: 12 }}
-          >
-            <Icon name="trash-outline" size={22} color="#ff3b30" />
-          </TouchableOpacity>
+          {PERMISSIONS.addTask() && (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('EditTask', { taskId: item.task_id })
+              }
+            >
+              <Icon name="create-outline" size={22} color="#1976d2" />
+            </TouchableOpacity>
+          )}
+          {PERMISSIONS.deleteTask() && (
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert('Delete Task', 'Are you sure?', [
+                  { text: 'Cancel' },
+                  {
+                    text: 'Delete',
+                    onPress: () => handleDelete(item.task_id),
+                    style: 'destructive',
+                  },
+                ])
+              }
+              style={{ marginLeft: 12 }}
+            >
+              <Icon name="trash-outline" size={22} color="#ff3b30" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -195,9 +200,11 @@ const TaskList = () => {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('AddTasks')}>
-            <Icon name="add-circle" size={30} color="#fff" />
-          </TouchableOpacity>
+          {PERMISSIONS.addTask() && (
+            <TouchableOpacity onPress={() => navigation.navigate('AddTasks')}>
+              <Icon name="add-circle" size={30} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

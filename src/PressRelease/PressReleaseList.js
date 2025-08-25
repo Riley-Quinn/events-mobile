@@ -21,27 +21,16 @@ const PressReleaseList = () => {
       fetchPressRelease();
     }, []),
   );
-
-  const fetchPressRelease = async showAllFlag => {
+  const fetchPressRelease = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${BASE_URL}/api/press-release`, {
+      const res = await axios.get(`${BASE_URL}/api/press-release/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const allPressRelease = res.data;
-
-      if (showAllFlag) {
-        setPressRelease(allPressRelease);
-      } else {
-        const today = moment().format('YYYY-MM-DD');
-        const filteredPressRelease = allPressRelease.filter(
-          event => moment(event.date).format('YYYY-MM-DD') === today,
-        );
-        setPressRelease(filteredPressRelease);
-      }
+      setPressRelease(res.data.list);
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch pressRelease');
+      Alert.alert('Error', 'Failed to fetch Press Release');
     }
   };
 
@@ -110,10 +99,10 @@ const PressReleaseList = () => {
         <Text style={styles.title}>My PressRelease</Text>
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {PERMISSIONS.addEvent() && (
+          {PERMISSIONS.addPressRelease() && (
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => navigation.navigate('AddEvent')}
+              onPress={() => navigation.navigate('AddPressRelease')}
             >
               <Icon name="add-circle" size={30} color="#ff883a" />
             </TouchableOpacity>
@@ -146,7 +135,7 @@ const PressReleaseList = () => {
                 </View>
 
                 <View style={styles.actionIcons}>
-                  {PERMISSIONS.addEvent() && (
+                  {PERMISSIONS.addPressRelease() && (
                     <TouchableOpacity
                       onPress={() =>
                         navigation.navigate('EditPressRelease', {
@@ -158,7 +147,7 @@ const PressReleaseList = () => {
                     </TouchableOpacity>
                   )}
 
-                  {PERMISSIONS.addEvent() && (
+                  {PERMISSIONS.deletePressRelease() && (
                     <TouchableOpacity
                       onPress={() =>
                         Alert.alert(

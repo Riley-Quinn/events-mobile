@@ -14,6 +14,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '@env';
+import { PERMISSIONS } from '../Dashboard/contextPage';
 
 const AddPressRelease = () => {
   const navigation = useNavigation();

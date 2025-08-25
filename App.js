@@ -24,30 +24,22 @@ import ViewPressRelease from './src/PressRelease/ViewPressRelease';
 import EditPressRelease from './src/PressRelease/EditPressRelease';
 import EditTask from './src/Tasks/EditTask';
 import PasswordChange from './src/Authentication/PasswordChange';
+
 import PushNotification from 'react-native-push-notification';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 import messaging from '@react-native-firebase/messaging';
-import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import AddPrivatePage from './src/PrivatePage/AddPrivatePage';
+import PrivatePageList from './src/PrivatePage/PrivatePageList';
 
 const Stack = createNativeStackNavigator();
 
 // 🔴 Background FCM handler (outside component)
-messaging().setBackgroundMessageHandler(async remoteMessage => {});
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  console.log('📩 Background FCM:', remoteMessage);
+});
 
 export default function App() {
   useEffect(() => {
-    const requestPermission = async () => {
-      if (Platform.OS === 'android' && Platform.Version >= 33) {
-        await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-        );
-      }
-      await messaging().requestPermission();
-    };
-
-    requestPermission();
-
     // 👇 Create channel only once
     PushNotification.createChannel(
       {
@@ -70,12 +62,14 @@ export default function App() {
       });
     });
 
+    // ✅ When user taps notification from background
     const unsubscribeOpened = messaging().onNotificationOpenedApp(
       remoteMessage => {
         console.log('➡️ Opened from background:', remoteMessage);
       },
     );
 
+    // ✅ When app was quit and opened via notification
     messaging()
       .getInitialNotification()
       .then(remoteMessage => {
@@ -84,6 +78,7 @@ export default function App() {
         }
       });
 
+    // cleanup listeners when component unmounts
     return () => {
       unsubscribe();
       unsubscribeOpened();
@@ -92,9 +87,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <GestureHandlerRootView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator
+            initialRouteName="DashboardScreen"
+            screenOptions={{ headerShown: false }}
+          >
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
             <Stack.Screen name="AddEvents" component={AddEvents} />
@@ -126,6 +124,8 @@ export default function App() {
             />
             <Stack.Screen name="EditTask" component={EditTask} />
             <Stack.Screen name="PasswordChange" component={PasswordChange} />
+            <Stack.Screen name="AddPrivatePage" component={AddPrivatePage} />
+            <Stack.Screen name="PrivatePageList" component={PrivatePageList} />
           </Stack.Navigator>
         </NavigationContainer>
       </GestureHandlerRootView>
